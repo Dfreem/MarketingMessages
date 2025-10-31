@@ -1,0 +1,297 @@
+﻿@using MarketingMessages.Client.Services.HttpService
+@using MarketingMessages.Shared.Components
+@using MarketingMessages.Shared.Models
+@inject IHTTPService _http
+@inject IToastService _toast
+
+<EditForm Model="this">
+    <div class="d-flex w-100 align-content-center pt-3 px-2 gap-2">
+        <div class="col-3">
+            <select @onchange='SelectCategory' class="form-select small">
+                <option value="@SegmentFormType.None">Select One</option>
+                @foreach (var category in Enum.GetValues<SegmentCategory>())
+                {
+                    if (category == SegmentCategory.None) continue;
+                    <option value="@category">@(category.ToString())</option>
+
+                }
+            </select>
+        </div>
+        <div class="col-3">
+            @if (Model.SegmentCategory == SegmentCategory.Profession.ToString() && _professionDropdown.Any())
+            {
+
+                <Dropdown MenuCssClass="w-100 max-h-20 overflow-y-auto py-0" ButtonCssClass="form-select text-start border-400">
+                    <DropdownButton>
+                        Select
+                    </DropdownButton>
+                    <DropdownMenu>
+                        <ul class="list-group py-0">
+
+                            <li class="list-group-item list-group-item-action list-group-item-light rounded-0 py-0 ">
+                                <div class="form-check w-100 d-flex px-2 py-1">
+                                    <label class="form-check-label me-auto fw-bolder text-500 small">
+                                        All
+                                    </label>
+                                    <input type="checkbox" class="form-check-input" @onchange="SelectAllProfessions" />
+                                </div>
+                            </li>
+                            @foreach (var fieldVal in _professionDropdown)
+                            {
+                                <li class="list-group-item list-group-item-action list-group-item-light rounded-0 py-0">
+                                    <div class="form-check w-100 d-flex px-2 py-1">
+                                        <label class="form-check-label me-auto small">
+                                            @fieldVal.Key
+                                        </label>
+                                        <input type="checkbox" class="form-check-input" checked="@fieldVal.Value" @onchange="(async (args) => await ProfessionCheckboxClicked(fieldVal.Key, (bool)(args.Value ?? false)))" />
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    </DropdownMenu>
+                </Dropdown>
+            }
+            else if (Model.SegmentCategory == SegmentCategory.State.ToString() && _stateDropdown.Any())
+            {
+
+                <Dropdown MenuCssClass="w-100 max-h-20 overflow-y-auto py-0" ButtonCssClass="form-select text-start border-400">
+                    <DropdownButton>
+                        Select
+                    </DropdownButton>
+                    <DropdownMenu>
+                        <ul class="list-group py-0">
+
+                            <li class="list-group-item list-group-item-action list-group-item-light rounded-0 py-0 ">
+                                <div class="form-check w-100 d-flex px-2 py-1">
+                                    <label class="form-check-label me-auto fw-bolder text-500 small">
+                                        All
+                                    </label>
+                                    <input type="checkbox" class="form-check-input" @onchange="SelectAllState" />
+                                </div>
+                            </li>
+                            @foreach (var fieldVal in _stateDropdown)
+                            {
+                                <li class="list-group-item list-group-item-action list-group-item-light rounded-0 py-0">
+                                    <div class="form-check w-100 d-flex px-2 py-1">
+                                        <label class="form-check-label me-auto small">
+                                            @fieldVal.Key
+                                        </label>
+                                        <input type="checkbox" class="form-check-input" checked="@fieldVal.Value" @onchange="(async (args) => await StateCheckboxChecked(fieldVal.Key, (bool)(args.Value ?? false)))" />
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    </DropdownMenu>
+                </Dropdown>
+            }
+            else if (Model.SegmentCategory == SegmentCategory.ZipCode.ToString())
+            {
+
+                <div class="d-flex w-100">
+                    <input type="text" @onchange="((args) => _paramValue = args.Value?.ToString())" value="@_paramValue" class="form-control" placeholder="Enter a Zip Code" />
+                    <a data-bs-toggle="tooltip" data-bs-title="Add a zipcode to the list" @onclick="AddSearchTerm" class="link link-green-300 ms-3">
+                        <i class="fa fa-plus-circle fs-16"></i>
+                    </a>
+                </div>
+                <div class="d-flex mt-2">
+                    @for (int i = 0; i < Model.QueryParams.Count; i++)
+                    {
+                        var item = Model.QueryParams[i];
+                        <span class="badge border border-1 bg-600 text-bg-600">
+                            @item
+                            <a class="link text-white" @onclick="(async () => await RemoveSearchTerm(item))">
+                                <i class="bi bi-x fs-14"></i>
+                            </a>
+                        </span>
+                    }
+                </div>
+            }
+        </div>
+        <div class=" ms-auto col-auto">
+            <button class="btn btn-link link icon-link link-secondary" @onclick='(async () => await RemoveRow.InvokeAsync(Model))'>
+                <i class="fa fa-minus-circle fs-14"></i>
+            </button>
+        </div>
+    </div>
+</EditForm>
+<hr />
+
+<Modal Id="no-contacts-modal" @ref="_noContactsModal" HeaderClass="bg-warning-subtle p-0">
+    <ModalHeader>
+        <button class="btn btn-close" data-bs-dismiss="modal"><i class="bi bi-x fs-16"></i></button>
+    </ModalHeader>
+    <ModalBody>
+        <div class="d-flex w-100 fs-16">
+            <div class="col-auto">
+                You don't have any contacts yet.
+            </div>
+            <div class="col-auto">
+                <NavLink class="link text-end" href="audience/import">
+                    import contacts
+                </NavLink>
+            </div>
+        </div>
+    </ModalBody>
+</Modal>
+
+@code {
+    [Parameter, EditorRequired]
+    public SegmentFormRow Model { get; set; }
+
+    [Parameter]
+    public EventCallback<SegmentFormRow> ModelChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<SegmentFormRow> RemoveRow { get; set; }
+
+    private List<string> _operators = [];
+    private Dictionary<string, bool> _professionDropdown = [];
+    private Dictionary<string, bool> _stateDropdown = [];
+    private List<string> _categoryOperators = [];
+    private string? _paramValue;
+    private Modal _noContactsModal = new();
+    private string _segmentCategory = "";
+    private List<string> _professions = [];
+
+    protected override void OnInitialized()
+    {
+        _stateDropdown = Enum.GetNames<StateAbbreviation>()
+            .Where(n => n != "None")
+            .OrderBy(n => n)
+            .ToDictionary(n => n, _ => false);
+        base.OnInitialized();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _professions = await _http.GetProfessions();
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    protected override void OnParametersSet()
+    {
+        if (Model.SegmentCategory == _segmentCategory)
+            return;
+        _segmentCategory = Model.SegmentCategory;
+
+
+        if (String.IsNullOrEmpty(Model.SegmentCategory))
+            return;
+        switch (Enum.Parse<SegmentCategory>(Model.SegmentCategory))
+        {
+            case (SegmentCategory.Profession):
+                _professionDropdown = _professions.ToDictionary(p => p.ToString(), p => Model.QueryParams.Contains(p.ToString()));
+                break;
+            case (SegmentCategory.State):
+                _stateDropdown = Enum.GetNames<StateAbbreviation>()
+                    .Where(n => n != "None")
+                    .OrderBy(n => n)
+                    .ToDictionary(n => n, n => Model.QueryParams.Contains(n));
+                break;
+            default:
+                break;
+        }
+        base.OnParametersSet();
+    }
+    private async Task SelectCategory(ChangeEventArgs args)
+    {
+        Model.QueryParams.Clear();
+        if (Enum.TryParse<SegmentCategory>(args.Value?.ToString(), out var val))
+        {
+            Model.SegmentCategory = args.Value?.ToString() ?? "";
+            _operators = val.GetOperators().ToList();
+            if (val == SegmentCategory.Profession)
+            {
+                if (_professions.Count == 0)
+                {
+                    await _noContactsModal.Show();
+                }
+                _professionDropdown = _professions.Order().ToDictionary(p => p, _ => false);
+            }
+            // await InvokeAsync(StateHasChanged);
+            await ModelChanged.InvokeAsync(Model);
+
+        }
+
+    }
+    // private async Task SelectOperator()
+    // {
+    // await ModelChanged.InvokeAsync(Model);
+    // await InvokeAsync(StateHasChanged);
+    // }
+    private async Task ProfessionCheckboxClicked(string row, bool isChecked)
+    {
+        _professionDropdown[row] = isChecked;
+        if (isChecked)
+            Model.QueryParams.Add(row);
+        else
+            Model.QueryParams.Remove(row);
+        await ModelChanged.InvokeAsync(Model);
+    }
+
+    private async Task StateCheckboxChecked(string row, bool isChecked)
+    {
+        _stateDropdown[row] = isChecked;
+        if (isChecked)
+            Model.QueryParams.Add(row);
+        else
+            Model.QueryParams.Remove(row);
+        await ModelChanged.InvokeAsync(Model);
+    }
+
+    private async Task SelectAllProfessions(ChangeEventArgs args)
+    {
+        bool isChecked = Convert.ToBoolean(args.Value);
+        foreach (var item in _professionDropdown.Keys)
+        {
+            _professionDropdown[item] = isChecked;
+        }
+        if (isChecked)
+            Model.QueryParams = _professionDropdown.Select(p => p.Key).ToList();
+        else
+            Model.QueryParams.Clear();
+
+        await ModelChanged.InvokeAsync(Model);
+        await InvokeAsync(StateHasChanged);
+    }
+    private async Task SelectAllState(ChangeEventArgs args)
+    {
+        bool isChecked = Convert.ToBoolean(args.Value);
+        foreach (var item in _stateDropdown.Keys)
+        {
+            _stateDropdown[item] = isChecked;
+        }
+        if (isChecked)
+            Model.QueryParams = _stateDropdown.Select(p => p.Key).ToList();
+        else
+            Model.QueryParams.Clear();
+
+        await ModelChanged.InvokeAsync(Model);
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task AddSearchTerm(MouseEventArgs args)
+    {
+        if (_paramValue is null)
+            return;
+        Model.QueryParams.Add(_paramValue);
+        _paramValue = "";
+        await ModelChanged.InvokeAsync(Model);
+    }
+
+    private async Task RemoveSearchTerm(string item)
+    {
+        Model.QueryParams.Remove(item);
+        await ModelChanged.InvokeAsync(Model);
+    }
+
+    private async Task OperatorUpdated()
+    {
+        await ModelChanged.InvokeAsync(Model);
+    }
+
+}
+

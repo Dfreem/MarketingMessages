@@ -1,0 +1,81 @@
+﻿
+<div id="@Id" class="@(GetDirectionClass() + " position-static " + Class)" data-bs-offset="@(GetOffset())" >
+    @if (UseAnchor)
+    {
+        <a class="@ButtonCssClass @(ShowToggleIcon ? "dropdown-toggle" : "")" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            @DropdownButton
+        </a>
+    }
+    else
+    {
+        <button class="btn @ButtonCssClass @(ShowToggleIcon ? "dropdown-toggle dropdown-button show" : "")" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            @DropdownButton
+        </button>
+    }
+    <div class="dropdown-menu @MenuCssClass" style="z-index: 5;">
+        @DropdownMenu
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+
+    [Parameter]
+    public string? Class { get; set; }
+
+    [Parameter]
+    public DropdownDirection Direction { get; set; }
+
+    [Parameter]
+    public string[] Offset { get; set; } = new string[2] { "0", "0" };
+
+    /// <summary>
+    /// if true, the dropdown button is created using an anchor element. By default, a button element is used
+    /// </summary>
+    [Parameter]
+    public bool UseAnchor { get; set; }
+
+    [Parameter]
+    public bool ShowToggleIcon { get; set; }
+
+    [Parameter]
+    public DropdownDisplay Display { get; set; } = DropdownDisplay.Dynamic;
+
+    [Parameter]
+    public string? ButtonCssClass { get; set; }
+
+    [Parameter]
+    public string? MenuCssClass { get; set; }
+
+    [Parameter]
+    public RenderFragment? DropdownButton { get; set; }
+
+    [Parameter]
+    public RenderFragment? DropdownMenu { get; set; }
+
+    private string GetDirectionClass()
+    {
+        string direction = "drop" + Direction.ToString().ToLower();
+        return direction;
+    }
+
+    private string GetOffset()
+    {
+        return String.Join(',', Offset);
+    }
+
+    public enum DropdownDisplay
+    {
+        Dynamic,
+        Static
+    }
+    public enum DropdownDirection
+    {
+        Down,
+        Start,
+        End,
+        Up
+    }
+
+}

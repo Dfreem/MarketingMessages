@@ -1,0 +1,342 @@
+﻿@page "/campaigns"
+
+@inject IHTTPService _http
+@inject IToastService _toast
+@inject IJSRuntime _js
+@inject CampaignService _campaignService
+
+@rendermode @(new InteractiveWebAssemblyRenderMode(false))
+@attribute [StreamRendering]
+
+<PageTitle>Campaigns</PageTitle>
+<div class="d-flex ms-5 mt-4">
+    <h3 class="text-600 ">Campaigns</h3>
+</div>
+
+<hr />
+
+
+<div class="container-fluid">
+    <div class="d-flex flex-column flex-md-row">
+        <div class="fit-width">
+            @if (CampaignItems.Count() != 0)
+            {
+
+                <QuickGrid Items="CampaignItems">
+                    <PropertyColumn Property="c => c.Name" Sortable="true" Title="Campaign"></PropertyColumn>
+                    <TemplateColumn Title="Template Data" Context="campaign">
+                        <div class="d-flex flex-wrap gap-1">
+                            @foreach (var item in campaign.Content.TemplatePropertyNames.Split(','))
+                            {
+                                <div class="badge">@item</div>
+                            }
+                        </div>
+                    </TemplateColumn>
+                    <TemplateColumn Context="campaign">
+                        @{
+                            var contentId = campaign.Content.ContentId;
+                            string url = $"/campaigns/content/{contentId}";
+                        }
+                        <NavLink class="link" href="@url">View Content</NavLink>
+                    </TemplateColumn>
+                    <TemplateColumn Context="campaign">
+                        <div class="d-flex">
+                            <div class="col">
+
+                                <div class="form-check">
+                                    <label class="form-check-label">
+                                        Disable
+                                    </label>
+                                    <input type="checkbox" checked="@(!campaign.IsEnabled)" class="form-check-input" />
+                                </div>
+                            </div>
+                        </div>
+                    </TemplateColumn>
+                    <TemplateColumn Context="campaign">
+                        @{
+                            string contentUrl = $"/campaigns/content/{campaign.CampaignId}";
+                        }
+                        <div class="d-flex w-100">
+
+                            <Dropdown ButtonCssClass="link" UseAnchor>
+                                <DropdownButton>
+                                    Options
+                                </DropdownButton>
+                                <DropdownMenu>
+                                    <DropdownItem>
+                                        <NavLink class="link fw-medium" href="@contentUrl">View Content</NavLink>
+                                    </DropdownItem>
+                                    <DropdownItem Class="cursor-pointer" Clicked="(() => ViewDetails(campaign.CampaignId))">
+                                        <span class="text-primary fw-medium">
+                                            View Details
+                                        </span>
+                                    </DropdownItem>
+                                    <DropdownItem Class="cursor-pointer fw-medium link link-danger" Clicked="(() => DeleteCampaign(campaign.CampaignId))">Delete</DropdownItem>
+                                </DropdownMenu>
+                            </Dropdown>
+                        </div>
+                    </TemplateColumn>
+                </QuickGrid>
+            }
+
+        </div>
+    </div>
+</div>
+<Modal @ref="_modalRef" Id="detail-modal" Class="modal-resizable top-15">
+    <ModalTitle>
+        <h3 class="fw-light mb-3">
+            @_currentCampaign?.Name
+        </h3>
+    </ModalTitle>
+    <ModalBody>
+        <hr />
+        @if (_loading || _currentCampaign == null)
+        {
+            <div class="d-flex flex-column gap-3 w-100 mt-5 justify-content-center align-items-center">
+                <div class="spinner-border spinner-grow text-600">
+                </div>
+                <label class="col-form-label">Loading...</label>
+            </div>
+        }
+        else if (_currentCampaign != null)
+        {
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-md">
+                        <h4 class="mb-3">Campaign Info</h4>
+                        <div class="d-flex object-fit-contain">
+                            <table>
+                                <tbody>
+                                    <tr>
+                                        <td class="text-nowrap">
+                                            <span class="fw-bolder me-3">Date & Time</span>
+                                        </td>
+                                        <td class="text-nowrap">
+                                            @_currentCampaign?.StartDate?.ToString("MMM dd - h:mm tt")
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="text-nowrap">
+                                            <span class="fw-bolder me-3">Send From</span>
+                                        </td>
+                                        <td class="text-nowrap">
+                                            @_currentCampaign?.From
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        @if (_currentCampaign?.UnsubscribeGroup != null)
+                                        {
+                                            <td class="text-nowrap">
+                                                <span class="fw-bolder me-3">Unsubscribe Group</span>
+                                            </td>
+                                            <td class="text-nowrap">
+                                                @_currentCampaign?.UnsubscribeGroup?.Name
+                                            </td>
+                                        }
+                                    </tr>
+                                    <tr>
+                                        <td class="text-nowrap">
+                                            <span class="fw-bolder me-3">Total Contacts:</span>
+                                        </td>
+                                        <td class="text-nowrap">
+                                            @_currentCampaign?.Contacts?.Count
+                                        </td>
+                                    </tr>
+
+                                </tbody>
+                            </table>
+                        </div>
+
+                    </div>
+                    <div class="col-md mx-auto">
+
+                        <h4 class="mb-3">Statistics</h4>
+                        <div class="d-flex w-100">
+
+                            <table class="col-6">
+                                <tr>
+                                    <td>
+                                        <span class="fw-bolder me-auto">Sent</span>
+                                    </td>
+                                    <td>
+                                        @_currentCampaign?.Stats?.TotalEmailsSent
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <span class="fw-bolder me-auto">Opens</span>
+                                    </td>
+                                    <td>
+                                        @_currentCampaign?.Stats?.TotalOpens
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <span class="fw-bolder me-auto">Clicks</span>
+                                    </td>
+                                    <td>
+                                        @_currentCampaign?.Stats?.TotalClicks
+                                    </td>
+                                </tr>
+                            </table>
+                            <table class="col-6">
+                                <tr>
+                                    <td>
+                                        <span class="fw-bolder me-auto">Bounces</span>
+                                    </td>
+                                    <td>
+                                        @_currentCampaign?.Stats?.TotalBounces
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <span class="fw-bolder me-auto">Dropped</span>
+                                    </td>
+                                    <td>
+                                        @_currentCampaign?.Stats?.TotalDropped
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <span class="fw-bolder me-auto">Clicks</span>
+                                    </td>
+                                    <td>
+                                        @_currentCampaign?.Stats?.TotalUnsubscribes
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <EditForm class="d-flex" Model="this" OnSubmit="SendTestEmail">
+                        <div class="col-md-auto">
+                            <label class="col-form-label">Send Test Email</label>
+                        </div>
+                        <div class="col-md ps-3 d-flex flex-nowrap gap-2">
+                            <input type="email"
+                                   class="form-control"
+                                   value="@_testEmail"
+                                   @onchange='((args) => _testEmail = args.Value?.ToString() ?? "")' />
+                            <button class="btn btn-primary" type="submit"><i class="bi bi-send"></i></button>
+                        </div>
+                    </EditForm>
+                </div>
+
+            </div>
+        }
+
+    </ModalBody>
+</Modal>
+
+<Loading IsLoading="_loading" />
+@code {
+    Modal _modalRef = new();
+
+    public List<CampaignDetailModel> UserCampaigns { get; set; } = [];
+    public IQueryable<CampaignDetailModel> CampaignItems { get; set; } = new List<CampaignDetailModel>().AsQueryable();
+    string _testEmail = "";
+    CampaignDetailModel? _currentCampaign;
+    string? _editingName;
+    int _editingNameId;
+    bool _loading;
+
+    HubConnection? _connection;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _loading = true;
+            await InvokeAsync(StateHasChanged);
+            UserCampaigns = await _campaignService.GetUserCampaignsAsync();
+            CampaignItems = UserCampaigns.AsQueryable();
+            _connection = new HubConnectionBuilder()
+                .WithUrl("/Notifications")
+                .Build();
+            _connection.On<CampaignDetailModel>("CampaignStatusChanged", async (CampaignDetailModel model) =>
+            {
+                var existing = UserCampaigns.FirstOrDefault(c => c.CampaignId == model.CampaignId);
+                if (existing is not null)
+                {
+                    UserCampaigns.Remove(existing);
+                }
+                UserCampaigns.Add(model);
+                if (_currentCampaign?.CampaignId == model.CampaignId)
+                    _currentCampaign = model;
+
+                await InvokeAsync(StateHasChanged);
+            });
+            _loading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+    private async Task DeleteCampaign(int campaignId)
+    {
+        var remove = UserCampaigns.FirstOrDefault(c => c.CampaignId == campaignId);
+        bool shoulddelete = await _js.InvokeAsync<bool>("confirm", $"Are you sure you want to delete the {remove.Name} Campaign?");
+        if (!shoulddelete) return;
+        var response = await _http.DeleteCampaignAsync(campaignId);
+        if (remove is not null && response.Success)
+        {
+            _toast.Success("Successfully deleted Campaign");
+            UserCampaigns.Remove(remove);
+            if (remove is not null)
+                UserCampaigns.Remove(remove);
+            if (_currentCampaign?.CampaignId == campaignId) _currentCampaign = new();
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+    private async Task ViewDetails(int campaignId)
+    {
+        _currentCampaign = null;
+        await _modalRef.Show();
+        _currentCampaign = UserCampaigns.FirstOrDefault(c => c.CampaignId == campaignId);
+    }
+    private async Task CompleteEditing()
+    {
+        var save = UserCampaigns.FirstOrDefault(c => c.CampaignId == _editingNameId);
+        var response = await _http.UpdateCampaignAsync(save!);
+        if (response.Success)
+            _toast.Success("Updated campaign successfully");
+        else
+            _toast.Warning("Unable to update campaign"); // TODO reset edits on fail
+        _editingNameId = 0;
+        _editingName = "";
+    }
+    private void SetEditingName(int campaignId)
+    {
+        _editingName = UserCampaigns.FirstOrDefault(c => c.CampaignId == campaignId)?.Name;
+        _editingNameId = campaignId;
+    }
+    private async Task DisableChecked(ChangeEventArgs args, int campaignId)
+    {
+        var campaign = UserCampaigns.FirstOrDefault(c => c.CampaignId == campaignId);
+        // campaign!.IsEnabled = !Convert.ToBoolean(args.Value);
+        var response = await _http.UpdateCampaignAsync(campaign!);
+        if (response.Success)
+            _toast.Success("Updated campaign successfully");
+        else
+            _toast.Warning("Unable to update campaign"); // TODO reset edits on fail
+
+    }
+    private async Task SendTestEmail()
+    {
+        if (_testEmail is null || _currentCampaign is null)
+        {
+            _toast.Warning("Must enter an emil address to send a test message.");
+            return;
+        }
+        var response = await _campaignService.TestCampaignEmail(_currentCampaign.CampaignId, _testEmail);
+        if (response.Success)
+        {
+            _toast.Success($"Sent test email to {this._testEmail}");
+            this._testEmail = "";
+        }
+        else
+        {
+            _toast.Error(response?.Error ?? "Unable to send test email.");
+        }
+    }
+}

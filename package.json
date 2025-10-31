@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "quill-blot-formatter": "^1.0.5"
+  }
+}

@@ -1,0 +1,11 @@
+.offcanvas-title {
+    padding-inline-start: 1rem;
+    padding-bottom: .25rem;
+    font-weight: 600;
+    color: #{$gray-600};
+}
+
+.offcanvas-body {
+    padding-inline: 0;
+    overflow-inline: hidden;
+}

@@ -1,0 +1,60 @@
+﻿@use 'sass:map';
+
+.menu-container {
+    position: relative;
+    width: #{$side-menu-width};
+
+    & .menu-collapse {
+        width: #{$menu-collapse} !important;
+    }
+}
+
+.sidebar {
+    background-color: #{$body-bg};
+    z-index: 1;
+    width: #{$side-menu-width};
+    height: 100vh;
+    padding: 1rem;
+    padding-bottom: 5em;
+    position: fixed;
+    border-inline-end: 2px solid #{$gray-300};
+    //top: 5rem;
+
+    & .nav-item {
+        margin-bottom: .5rem;
+        padding-block: .5em;
+
+        & .active {
+            border: 2px solid #{$gray-500};
+        }
+    }
+
+    @media(max-width: map.get($grid-breakpoints, 'md')) {
+        height: fit-content;
+        width: 100%;
+        position: relative;
+    }
+}
+
+.menu-width {
+    width: #{$side-menu-width};
+    position: relative;
+    margin-inline-end: 2em;
+
+    &:has(.menu-collapse){
+        margin-inline-end: 6em;
+        width: #{$menu-collapse} !important;
+    }
+
+    @media(max-width: map.get($grid-breakpoints, 'md')) {
+        display: none;
+    }
+
+    & .menu-collapse {
+        width: #{$menu-collapse} !important;
+    }
+}
+
+span.menu-collapse {
+    display: none;
+}

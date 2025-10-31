@@ -1,0 +1,193 @@
+﻿
+@inject IJSRuntime _js
+@inject ContentService _contentService
+
+<div class="text-editor @Class">
+    <div id="editor">
+        @(_htmlContent)
+    </div>
+    <div class="vs-2 align-items-center d-flex">
+        @if (_showNotification)
+        {
+            <span class="@_notificationClass fw-bolder">@_notificationMessage</span>
+        }
+    </div>
+</div>
+
+<Modal OnShown="SyncHtml" Id="code-editor">
+    <ModalTitle> HTML Code Editor </ModalTitle>
+    <ModalBody>
+        <hr />
+        <p class="p-3">
+            Paste or edit HTML.
+        </p>
+        <EditForm Model="Model">
+            <div class="d-flex w-100 px-0 mx-0 min-h-30">
+                <InputTextArea class="form-text w-100 vs-30" @bind-Value="_rawHtml" @bind-Value:after="SetHtmlContent">
+
+                </InputTextArea>
+            </div>
+        </EditForm>
+    </ModalBody>
+    <ModalFooter>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Done</button>
+    </ModalFooter>
+</Modal>
+
+@code {
+    bool _modalVisible;
+    string _notificationClass = "";
+
+    CancellationTokenSource _cancel = new();
+
+    [Parameter]
+    public string? Class { get; set; }
+
+    [Parameter]
+    public HtmlEditorContent Model { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<HtmlEditorContent> ModelChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> OnEditorReady { get; set; }
+
+    bool _editorInitialized;
+    bool _initialized;
+    bool _showNotification;
+    string _notificationMessage = "";
+    string _rawHtml = "";
+    IJSObjectReference? _module;
+    DotNetObjectReference<RichHTMLEditor>? _selfRef;
+    MarkupString _htmlContent;
+    int _contentId;
+
+    #region Overrides
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _htmlContent = (MarkupString)Model.HtmlContent;
+            await InvokeAsync(StateHasChanged);
+            _selfRef = DotNetObjectReference.Create(this);
+            _module = await _js.InvokeAsync<IJSObjectReference>("import", cancellationToken: _cancel.Token, "./js/htmlEditor/richTextEditor.js");
+            var words = typeof(Contact).GetProperties().Select(p => $"#{p.Name}#").ToArray();
+            await _module.InvokeVoidAsync(
+                "initEditor",
+                 _selfRef,
+                 words,
+                 nameof(EditorCallback),
+                 nameof(TagMatched),
+                 nameof(JsModuleInitialized),
+                 nameof(ImageCallback)
+            );
+            _initialized = true;
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        // only call resetEditorContent if the model has changed.
+        if (_module is null || !_initialized || Model.ContentId == _contentId)
+            return;
+
+        _contentId = Model.ContentId;
+        _initialized = false;
+        await InvokeAsync(StateHasChanged);
+
+        await _module.InvokeVoidAsync("resetEditorContent", cancellationToken: _cancel.Token, Model.HtmlContent);
+        // _htmlContent = html;
+        _initialized = true;
+        await InvokeAsync(StateHasChanged);
+        await base.OnParametersSetAsync();
+    }
+    #endregion
+
+    public async Task<string> GetSemanticHTMLAsync()
+    {
+        Debug.Assert(_module != null);
+        return await _module.InvokeAsync<string>("getEditorContent");
+    }
+
+
+    #region JS Invokables
+    [JSInvokable]
+    public async Task ImageCallback(string name, string img)
+    {
+        Debug.Assert(_module != null);
+        img = img.Contains(',') ? img.Split(',')[^1] : img;
+        var imageResponse = await _contentService.UploadImageAsync(name, img);
+        string id = name.Replace(" ", "").Replace("(", "").Replace(")", "").Replace(".", "");
+        Model.HtmlContent = await _module.InvokeAsync<string>("replaceImgSrc", id, imageResponse.Url);
+        if (!Model.Images.TryAdd(name, img))
+            Model.Images[name] = img;
+
+        if (!Model.ImageUrls.TryAdd(name, imageResponse.Url))
+            Model.ImageUrls[name] = imageResponse.Url;
+
+        await ModelChanged.InvokeAsync(Model);
+    }
+
+    [JSInvokable]
+    public async Task EditorCallback(string htmlContent, string textContent)
+    {
+        Model.HtmlContent = htmlContent;
+        Model.TextContent = textContent;
+        await ModelChanged.InvokeAsync(Model);
+    }
+
+    [JSInvokable]
+    public async Task JsModuleInitialized()
+    {
+        _editorInitialized = true;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    [JSInvokable]
+    public async Task TagMatched(string tag)
+    {
+        if (Model.TemplateVariableNames.Contains(tag)) return;
+        _notificationMessage = $"Template value matched {tag}";
+        System.Timers.Timer timer = new();
+        timer.Interval = 2000;
+        timer.AutoReset = false;
+        timer.Elapsed += async (sender, args) =>
+        {
+            _showNotification = false;
+            await InvokeAsync(StateHasChanged);
+            _notificationMessage = "";
+        };
+        _showNotification = true;
+        _notificationClass = "text-success";
+        await InvokeAsync(StateHasChanged);
+        timer.Start();
+        Model.TemplateVariableNames.Add(tag);
+        await ModelChanged.InvokeAsync(Model);
+    }
+    #endregion
+
+    private async Task UpdateSubject(ChangeEventArgs args)
+    {
+        Model.Subject = args.Value?.ToString() ?? "";
+        await ModelChanged.InvokeAsync(Model);
+    }
+
+    public async Task SetHtmlContent()
+    {
+        Model.ContentId = 0;
+        Model.HtmlContent = _rawHtml;
+        // _htmlContent = (MarkupString)Model.HtmlContent;
+        if (_module == null)
+            return;
+        // await ModelChanged.InvokeAsync(Model);
+        await _module.InvokeVoidAsync("resetEditorContent", Model.HtmlContent);
+        await ModelChanged.InvokeAsync(Model);
+    }
+
+    public async Task SyncHtml()
+    {
+        _rawHtml = await GetSemanticHTMLAsync();
+    }
+
+}

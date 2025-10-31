@@ -1,0 +1,27 @@
+﻿@page "/Account/Logout"
+
+@using System.ComponentModel.DataAnnotations
+@using MarketingMessages.Shared.Models
+@using Microsoft.AspNetCore.Authentication
+@using Microsoft.AspNetCore.Identity
+@using MarketingMessages.Data
+@using MarketingMessages.Shared.Models
+nkey.Data
+@using MarketingMessages.Shared.Models
+
+@inject SignInManager<ApplicationUser> SignInManager
+@inject ILogger<Login> Logger
+@inject NavigationManager NavigationManager
+@inject IdentityRedirectManager RedirectManager
+
+<PageTitle>Log in</PageTitle>
+
+@code {
+
+    protected override async Task OnInitializedAsync()
+    {
+        await SignInManager.SignOutAsync();
+        await base.OnInitializedAsync();
+        RedirectManager.RedirectTo("Account/Login");
+    }
+}

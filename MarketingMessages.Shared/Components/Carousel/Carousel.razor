@@ -1,0 +1,50 @@
+﻿@using MarketingMessages.Shared.Components.Carousel
+@inject IJSRuntime _js
+
+<div id="@Id" class="carousel slide">
+    <div class="carousel-inner min-h-20">
+        <!--Bootstrap carousel must have an item set to active-->
+        @if (Items.Count != 0)
+        {
+
+            <div @key="Items.FirstOrDefault()?.Id" class='carousel-item active'>
+                @ItemTemplate(Items.First())
+            </div>
+            @foreach (var item in Items.Skip(1))
+            {
+                <div @key="item.Id" class='carousel-item'>
+                    @ItemTemplate(item)
+                </div>
+            }
+        }
+    </div>
+    <button class="carousel-control-prev" type="button" data-bs-target="#@Id" data-bs-slide="prev">
+        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Previous</span>
+    </button>
+    <button class="carousel-control-next" type="button" data-bs-target="#@Id" data-bs-slide="next">
+        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+        <span class="visually-hidden">Next</span>
+    </button>
+</div>
+
+@code {
+    [Parameter]
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+
+    [Parameter, EditorRequired]
+    public IReadOnlyList<CarouselItemModel> Items { get; set; } = default!;
+
+    [Parameter, EditorRequired]
+    public RenderFragment<CarouselItemModel> ItemTemplate { get; set; } = default!;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await _js.InvokeVoidAsync("initializeCarousels");
+            await InvokeAsync(StateHasChanged);
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+}

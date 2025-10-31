@@ -1,0 +1,105 @@
+﻿@use 'sass:map';
+
+
+.editor-width {
+    min-width: #{$editor-width};
+    max-width: #{$editor-width};
+
+    @media(max-width: map.get($grid-breakpoints, 'md')) {
+        max-width: #{$editor-width-md};
+        min-width: #{$editor-width-md};
+    }
+
+    @media(max-width: map.get($grid-breakpoints, 'sm')) {
+        max-width: #{$editor-width-sm};
+        min-width: #{$editor-width-sm};
+    }
+}
+
+//.editor-wrapper {
+//    position: relative;
+//    width: 100%;
+//    display: flex;
+//    justify-content: center;
+//}
+
+.text-editor {
+    //@extend .editor-width;
+    overflow-y: hidden;
+
+    & > #editor {
+        width: 100%;
+        min-height: #{$editor-height};
+        container-type: size;
+        //& > .ql-editor {
+        //    height: 100cqh;
+        //    width: 100cqw;
+        //}
+    }
+}
+
+.ql-container.ql-snow, .ql-toolbar.ql-snow {
+    border: solid 2px #{$gray-400};
+    //    outline: none;
+    //    border: none !important;
+}
+
+.ql-editor {
+    height: 30em;
+
+    & > p > * {
+        transition: all .5s ease-in-out;
+    }
+}
+
+.editor-container {
+    margin-inline: auto;
+    flex-direction: column;
+    border: 1px solid #ccc;
+    min-height: 60cqh;
+
+
+    @media(max-width: map.get($grid-breakpoints, 'md')) {
+        min-height: 100%;
+    }
+}
+
+.editor-toolbar {
+    border-bottom: 1px solid #ccc;
+    padding: 4px;
+    background: #f8f8f8;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+    .editor-toolbar button,
+    .editor-toolbar select {
+        margin: 2px;
+        padding: 0px 6px;
+        line-height: 1rem;
+        cursor: pointer;
+    }
+
+.editor-body {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 8px;
+    min-width: 600px;
+    height: 60cqh;
+
+    @media(max-width: map.get($grid-breakpoints, 'md')) {
+        min-height: 100%;
+        min-width: 100%;
+    }
+}
+
+.editor-surface {
+    //border: 1px solid #ccc;
+    padding: 8px;
+    overflow: auto;
+    background: #fff;
+    min-height: max-content;
+    /* width: 50rem; */
+}
+

@@ -1,0 +1,113 @@
+.quickgrid[theme=default] {
+    table-layout: fixed;
+    --col-gap: .5em;
+    //position: absolute;
+    //top: 25%;
+    //right: 1rem;
+    //right: calc(50% - 20rem);
+
+    & .sort-indicator {
+        background-repeat: no-repeat;
+    }
+
+    & .col-title {
+        font-size: 12pt;
+        padding: 1px;
+        display: flex;
+        justify-content: space-between;
+        width: max-content;
+        //gap: 2px;
+    }
+
+    & tbody tr {
+        border-block: 1px solid #{$gray-800};
+
+        & td {
+            overflow-y: clip;
+            text-overflow: ellipsis;
+        }
+    }
+
+    & tr:has(> td:not(:empty)) > td {
+        display: table-cell;
+    }
+
+    & td:empty {
+        display: none;
+    }
+}
+
+.quickgrid[theme=snow] {
+    table-layout: fixed;
+    //width: 66%;
+    //--col-gap: .75em 1em;
+    @media(max-width: map-get($grid-breakpoints, 'lg')) {
+        width: 35em;
+    }
+
+    @media(max-width: map-get($grid-breakpoints, 'md')) {
+        width: auto;
+    }
+    //position: absolute;
+    //top: 25%;
+    //right: 1rem;
+    //right: calc(50% - 20rem);
+
+    & .sort-indicator {
+        background-repeat: no-repeat;
+    }
+
+    & .col-title {
+        font-size: 12pt;
+        //padding: 1px;
+        display: flex;
+        justify-content: space-between;
+        width: max-content;
+        //gap: 2px;
+    }
+
+    & thead {
+        //display: none;
+    }
+    //& thead > tr {
+    //    background-color: #{$gray-700};
+    //    color: color-contrast($gray-700);
+    //}
+
+    & tbody tr {
+        border: none;
+
+        &:nth-child(2n) {
+            background-color: #{$gray-100};
+        }
+        //border: 2px solid #{$gray-600};
+        //margin-block: .5em;
+        outline: 2px solid #{$gray-400};
+        outline-offset: -6px;
+        border-radius: .5em;
+
+        & td {
+            padding-inline: .75em;
+            overflow-y: clip;
+            text-overflow: ellipsis;
+            height: 6em;
+            width: fit-content;
+        }
+    }
+
+    & tr:has(> td:not(:empty)) > td {
+        display: table-cell;
+    }
+
+    & td:empty {
+        display: none;
+    }
+}
+
+table.table-condensed {
+    & tbody > tr > td, thead > tr > th {
+        padding: 2px;
+        border-collapse: collapse;
+        font-optical-sizing: auto;
+    }
+}

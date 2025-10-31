@@ -1,0 +1,156 @@
+﻿@inject IHTTPService _http
+@inject ContentService _contentService
+@inject IToastService _toast
+@inject IJSRuntime _js
+
+<Modal HeaderClass="bg-200" BodyClass="bg-100" Class="rounded rounded-1 w-70" Id="choose-content-modal">
+    <ModalHeader>
+        <h3 class="text-700  mb-0">Select a Template</h3>
+    </ModalHeader>
+    <ModalTitle>
+        <div class="px-3">
+            <div class="d-flex vs-3 bg-200 align-items-center w-100 px-3 mb-3">
+                <a class="link link-600 me-auto fs-16 fw-bolder ms-3" @onclick="SelectPrevious">
+                    <i class="fa fa-chevron-left me-2"></i>
+                    Back
+                </a>
+                <div class="mx-auto col">
+                    <div class="d-flex align-content-end justify-content-evenly w-100">
+                        @for (int i = 0; i < UserContent.Count; i++)
+                        {
+                            int index = i;
+                            <div class="col-auto">
+                                @if (Previewing is not null && UserContent.IndexOf(Previewing) == i)
+                                {
+                                    <i class="fa fa-dot-circle text-600"></i>
+                                }
+                                else
+                                {
+                                    <a class="link link-500" @key="@index" @onclick="(() => SetPreviewing(index))">
+                                        <i class="fa fa-dot-circle text-500"></i>
+                                    </a>
+
+                                }
+                            </div>
+                        }
+                    </div>
+                </div>
+                <a class="link link-600 ms-auto me-3 fs-16 fw-bolder" @onclick="SelectNext">
+                    Next
+                    <i class="fa fa-chevron-right ms-2"></i>
+                </a>
+            </div>
+        </div>
+        <div class="d-flex">
+            <h4 class="text-600 reddit-sans-550 ms-3">@Previewing?.DocumentTitle</h4>
+            <a class="link link-danger ms-auto me-3" @onclick="DeleteContent">
+                Delete this content
+            </a>
+        </div>
+
+    </ModalTitle>
+    <ModalBody>
+
+        <div class="d-flex w-100 max-h-35 overflow-y-auto vs-25 px-3">
+            <div class="d-flex flex-column mx-auto border border-1 border-700 shadow-sm w-100 h-100">
+                <div class="w-100 h-100 mx-auto p-2">
+                    @((MarkupString)(Previewing?.HtmlContent ?? ""))
+                </div>
+                @if (String.IsNullOrEmpty(Previewing?.HtmlContent))
+                {
+
+                    <div class="w-100 h-100 mx-auto p-2">
+                        <h5 class="mx-auto text-center mt-5">No Content</h5>
+                    </div>
+                }
+            </div>
+        </div>
+        <div class="d-flex mt-3 px-3">
+            <div class="col">
+                <button data-bs-dismiss="modal" class="btn btn-600 w-100 fs-16 reddit-sans-550 " @onclick="SelectEditorContent">
+                    Select
+                </button>
+            </div>
+        </div>
+    </ModalBody>
+</Modal>
+
+
+@code {
+
+    public List<HtmlEditorContent> UserContent { get; set; } = [];
+
+    public HtmlEditorContent? Previewing { get; set; }
+
+    [Parameter]
+    public EventCallback<HtmlEditorContent> ContentSelected { get; set; }
+
+    int _contentIndex;
+    protected override async Task OnInitializedAsync()
+    {
+        var contentResponse = await _contentService.GetUserContentAsync();
+        UserContent = contentResponse.Select(c => new HtmlEditorContent()
+        {
+            ContentId = c.ContentId,
+            DocumentTitle = c.Name,
+            HtmlContent = c.HtmlContent,
+            TemplateVariableNames = c.Substitions,
+            TextContent = c.TextContent
+        }).ToList();
+        Previewing = UserContent.FirstOrDefault();
+        await InvokeAsync(StateHasChanged);
+        await base.OnInitializedAsync();
+
+        await base.OnInitializedAsync();
+    }
+
+    private async Task SelectNext(MouseEventArgs args)
+    {
+        _contentIndex += 1;
+        _contentIndex %= UserContent.Count;
+        Previewing = UserContent[_contentIndex];
+        await InvokeAsync(StateHasChanged);
+    }
+    private async Task SelectPrevious(MouseEventArgs args)
+    {
+        _contentIndex -= 1;
+        if (_contentIndex < 0)
+            _contentIndex = UserContent.Count - 1;
+        Previewing = UserContent[_contentIndex];
+        await InvokeAsync(StateHasChanged);
+    }
+    private async Task SelectEditorContent(MouseEventArgs args)
+    {
+        if (Previewing is null)
+            return;
+        _contentIndex = UserContent.IndexOf(Previewing);
+        var model = UserContent[_contentIndex];
+        await ContentSelected.InvokeAsync(model);
+        await InvokeAsync(StateHasChanged);
+    }
+    private async Task SetPreviewing(int index)
+    {
+        Previewing = UserContent[index];
+        await InvokeAsync(StateHasChanged);
+    }
+    private async Task DeleteContent(MouseEventArgs args)
+    {
+        if (Previewing is null)
+        {
+            return;
+        }
+
+        string confirmMessage = $"Are you sure you want to delete this content: {Previewing.DocumentTitle} ?";
+        var confirm = await _js.InvokeAsync<bool>("confirm", confirmMessage);
+        if (!confirm) return;
+        var response = await _http.DeleteEmailContentAsync(Previewing.ContentId);
+        if (response.Success)
+        {
+            // await _contentModal.Hide();
+            UserContent.Remove(Previewing);
+            Previewing = UserContent.FirstOrDefault();
+            _toast.Success("Successfully deleted email content");
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+}

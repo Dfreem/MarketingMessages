@@ -1,0 +1,129 @@
+﻿@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.SignalR.Client
+@using MarketingMessages.Shared.Components.Dropdown
+@using MarketingMessages.Shared.Components.Tooltip
+@using MarketingMessages.Shared.Services
+@inject NavigationManager Nav
+
+<nav class="navbar navbar-expand-lg position-sticky top-0 bg-body z-3">
+    <div class="container-fluid align-items-end px-md-5 pb-2">
+        <!-- Logo -->
+        <a class="navbar-brand" href="#">
+            <img width="80" src="./_content/MarketingMessages.Shared/images/logo.png" />
+        </a>
+
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarText">
+            <div class="navbar-nav w-100">
+                <div class="d-flex mt-3 w-100 justify-content-end align-items-end">
+                    <div class="nav-item mx-3" data-bs-toggle="tooltip" data-bs-title="Profile Settings">
+                        <NavLink href="/Account/Logout" class="link icon-link">
+                            <i class="fa fa-user-circle fs-24"></i>
+                        </NavLink>
+                    </div>
+                    <div class="nav-item mx-3 ">
+                        <Dropdown UseAnchor ButtonCssClass="align-self-end" MenuCssClass="p-3">
+                            <DropdownButton>
+                                <i class="fa fa-bell fs-20 text-primary"></i>
+                            </DropdownButton>
+                            <DropdownMenu>
+                                <div class="text-center text-700 fw-bolder">
+                                    Notifications have not been enabled yet
+                                </div>
+                            </DropdownMenu>
+                        </Dropdown>
+                    </div>
+                    <div class="nav-item mx-3 align-self-end">
+                        <NavLink href="/Account/Logout" class="link">
+                            Logout
+                        </NavLink>
+                    </div>
+                </div>
+                <div class="hide-min-md">
+                    <div class="d-flex flex-column">
+                        <div class="nav-item">
+                            <NavLink class="nav-link link icon-link d-flex align-items-center" href="/Create">
+                                <span class="text-success fw-medium">
+                                    Create
+                                </span>
+                                <i class='fa fa-plus'></i>
+                            </NavLink>
+                        </div>
+                        <div class="nav-item">
+                            <NavLink class="nav-link link icon-link d-flex align-items-center" href="/">
+                                <span class="text-success fw-medium">
+                                    Home
+                                </span>
+                            </NavLink>
+                        </div>
+                        <div class="nav-item">
+                            <NavLink class="nav-link link icon-link d-flex align-items-center" href="/campaigns">
+                                <span class="text-success fw-medium">
+                                    Campaigns
+                                </span>
+                            </NavLink>
+                        </div>
+                        <div class="nav-item">
+                            <NavLink class="nav-link link icon-link icon-link-hover d-flex align-items-center" href="/audience">
+                                <span class="fw-medium me-auto">
+                                    Audience
+                                </span>
+                            </NavLink>
+
+                            @if (_relativePath.StartsWith("/audience"))
+                            {
+                                <ul class="nav nav-fill nav-pills flex-column pt-2 ps-4">
+                                    <li class="nav-item">
+                                        <NavLink class="nav-link fs-12 link icon-link icon-link-hover d-flex align-items-center" href="/audience" Match="NavLinkMatch.All">
+                                            Segments
+                                        </NavLink>
+                                    </li>
+                                    <li class="nav-item">
+                                        <NavLink class="nav-link fs-12 link icon-link icon-link-hover d-flex align-items-center" href="/audience/contacts" Match="NavLinkMatch.All">
+                                            Contacts
+                                        </NavLink>
+                                    </li>
+                                    <li class="nav-item">
+                                        <NavLink class="nav-link fs-12 link icon-link icon-link-hover d-flex align-items-center" href="/audience/manage" Match="NavLinkMatch.All">
+                                            Manage
+                                        </NavLink>
+                                    </li>
+                                </ul>
+                            }
+                        </div>
+                        <div class="nav-item">
+                            <NavLink class="nav-link link icon-link d-flex align-items-center" href="/campaigns">
+                                <span class="text-success fw-medium">
+                                    Campaigns
+                                </span>
+                                <i class='fa fa-plus'></i>
+                            </NavLink>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</nav>
+
+@code {
+    string _relativePath = "/";
+
+    // TODO Notifications
+    protected override void OnInitialized()
+    {
+
+        Nav.LocationChanged += async (SenderModel, args) =>
+        {
+            _relativePath = new Uri(args.Location).LocalPath;
+            await InvokeAsync(StateHasChanged);
+        };
+        base.OnInitialized();
+    }
+
+
+}
+

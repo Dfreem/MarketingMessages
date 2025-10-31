@@ -1,0 +1,137 @@
+﻿@using Microsoft.AspNetCore.Components.QuickGrid
+@using Microsoft.EntityFrameworkCore
+@using MarketingMessages.Shared.DTO.V1
+@using MarketingMessages.Shared.Models
+
+@inject HttpClient _http
+
+<div class="mb-4 w-100">
+    <div class="bg-300 bg-gradient d-flex mb-auto vs-10 align-items-bottom">
+        <div class="container-fluid">
+
+            <EditForm Model="this" OnSubmit="SearchLogs">
+
+                <div class="row d-flex px-3">
+                    <div class="col-3">
+                        <InputSelect @bind-Value="Level">
+                            <option value="@LogLevel.None">Select One</option>
+                            @foreach (var level in Enum.GetValues<LoggingLevel>().Where(l => l != LoggingLevel.None))
+                            {
+                                <option value="@level">@level.ToString()</option>
+                            }
+                        </InputSelect>
+                    </div>
+                </div>
+                <div class="row d-flex align-items-end pb-3 h-100 px-3">
+                    <div class="col-3">
+                        <label class="fw-bolder text-600 col-form-label"> From: </label>
+                        <input class="form-control" type="date" @oninput='SelectFromDate' />
+                    </div>
+                    <div class="col-3">
+                        <label class="fw-bolder text-600 col-form-label"> To: </label>
+                        <input class="form-control" type="date" @oninput='SelectToDate' />
+                    </div>
+                    <div class="col">
+                        <div class="d-flex h-100">
+                            <button role="button" type="submit" class="btn btn-primary mt-auto">
+                                Search
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </EditForm>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        <div class="col-auto mx-auto">
+            @* <Tabs>
+                <TabCollection>
+
+                </TabCollection>
+
+            </Tabs> *@
+
+            <QuickGrid Class="table" Items="Logs">
+                <PropertyColumn Class="col-2" Sortable="true" Property="applicationlog => applicationlog.TimeStamp" Format="MM/dd hh:mm tt" />
+                <PropertyColumn Sortable="true" Property="applicationlog => applicationlog.Level" />
+                <PropertyColumn Sortable="true" Property="applicationlog => applicationlog.Message" />
+                <PropertyColumn Sortable="true" Property="applicationlog => applicationlog.Exception" />
+
+            </QuickGrid>
+        </div>
+    </div>
+</div>
+
+<Modal Class="top-33" Id="loading-modal" @ref="LoadingModal">
+    <ModalTitle>
+        Loading...
+    </ModalTitle>
+    <ModalBody>
+        <div class="conainer">
+            <div class="row align-items-center">
+                <div class="col-auto mx-center">
+                    <div class="spinner-border text-orange-600"></div>
+                </div>
+            </div>
+        </div>
+    </ModalBody>
+</Modal>
+
+@code {
+    public LoggingLevel Level { get; set; }
+    public IQueryable<ApplicationLog> Logs { get; set; } = new List<ApplicationLog>().AsQueryable();
+    public Modal LoadingModal { get; set; } = new();
+
+    public DateTime FromDate { get; set; } = DateTime.Now.AddDays(-7);
+    public DateTime ToDate { get; set; } = DateTime.Now;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            string url = $"api/AdminLogs/application-logs";
+            ApplicationLogRequest request = new() { FromDate = FromDate, ToDate = ToDate, Level = Level };
+            var response = await _http.PostAsJsonAsync(url, request);
+            if (response.IsSuccessStatusCode)
+            {
+                var applicationLogs = await response.Content.ReadFromJsonAsync<List<ApplicationLog>>() ?? [];
+                Logs = applicationLogs.AsQueryable();
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+    private void SelectFromDate(ChangeEventArgs args)
+    {
+        string dateString = args.Value?.ToString() ?? "";
+        if (DateTime.TryParse(dateString, out var date))
+        {
+            FromDate = date;
+        }
+
+    }
+    private void SelectToDate(ChangeEventArgs args)
+    {
+        string dateString = args.Value?.ToString() ?? "";
+        if (DateTime.TryParse(dateString, out var date))
+        {
+            ToDate = date;
+        }
+
+    }
+    private async Task SearchLogs(EditContext ctx)
+    {
+        await LoadingModal.Show();
+        var logs = await _http.GetApplicationLogsAsync(new()
+        {
+             FromDate = FromDate,
+             ToDate = ToDate,
+             Level = Level
+        });
+        Logs = logs.AsQueryable();
+        await LoadingModal.Hide();
+    }
+}

@@ -1,0 +1,78 @@
+﻿@use 'sass:color';
+@import "../lib/bootstrap/scss/_functions.scss";
+@import url('https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&display=swap');
+@import 'fonts';
+$enable-shadows: true;
+$enable-gradients: true;
+$enable-shadows: false;
+$font-family-base: "Reddit Sans", sans-serif;
+
+$primary: #FB9631;
+$secondary: #838383;
+//$tertiary:  #101010;
+//$info:  #101010;
+//$success:  #101010;
+//$danger: #f27d83;
+//$warning:  #101010;
+
+$text-muted: #bab5b5;
+
+@import "../lib/bootstrap/scss/_variables.scss";
+@import "../lib/bootstrap/scss/_variables-dark.scss";
+//$body-bg: #f3f3f3;
+
+$font-family: 'Reddit Sans';
+$border-radius: 2px;
+//$border-color: $gray-500;
+//$border-width: 1px;
+
+// HTML Editor
+$email-width-min: 600px;
+$email-width-max: 800px;
+$editor-width: 95cqw;
+$editor-height: 25rem;
+$editor-width-sm: contain;
+$editor-width-md: 50rem;
+
+$menu-collapse: 6em;
+
+// Nav
+$nav-link-padding-y: .25rem;
+//$nav-link-padding-x: 1rem;
+//$nav-link-font-size: null;
+//$nav-link-font-weight: null;
+$nav-link-color: #{$gray-700};
+$nav-link-hover-color: #{$gray-500};
+//$nav-link-transition: color .15s ease-in-out, background-color .15s ease-in-out, border-color .15s ease-in-out;
+//$nav-link-disabled-color: var(--#{$prefix}secondary-color);
+//$nav-link-focus-box-shadow: $focus-ring-box-shadow;
+
+//$nav-tabs-border-color: var(--#{$prefix}border-color);
+//$nav-tabs-border-width: var(--#{$prefix}border-width);
+//$nav-tabs-border-radius: var(--#{$prefix}border-radius);
+//$nav-tabs-link-hover-border-color: var(--#{$prefix}secondary-bg) var(--#{$prefix}secondary-bg) $nav-tabs-border-color;
+//$nav-tabs-link-active-color: var(--#{$prefix}emphasis-color);
+//$nav-tabs-link-active-bg: var(--#{$prefix}body-bg);
+//$nav-tabs-link-active-border-color: var(--#{$prefix}border-color) var(--#{$prefix}border-color) $nav-tabs-link-active-bg;
+
+$nav-pills-border-radius: .5rem;
+$nav-pills-link-active-color: #{$gray-800};
+$nav-pills-link-active-bg: #{$gray-300};
+
+//$nav-underline-gap: 1rem;
+//$nav-underline-border-width: .125rem;
+//$nav-underline-link-active-color: var(--#{$prefix}emphasis-color);
+
+// Side Menu
+$side-menu-width: 15rem;
+
+// Tabs
+$tab-bg: #eeeeee;
+$tab-border-color: color.adjust($primary, $lightness: -13%);
+
+// Toast
+$shadow-color: #313636;
+
+$theme-colors: map-merge-multiple($theme-colors, $oranges, $yellows, $greens,$blues, $grays, ("primary": $primary, "secondary": $secondary));
+@import "../lib/bootstrap/scss/_maps.scss";
+

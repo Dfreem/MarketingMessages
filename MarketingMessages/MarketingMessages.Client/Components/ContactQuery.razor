@@ -1,0 +1,364 @@
+﻿@using MarketingMessages.Shared.DTO.V1
+@inject IToastService _toast
+@inject HttpClient _http
+@inject ILogger<ContactQuery> _logger
+@attribute [StreamRendering]
+<div class="vs-14 mb-4 w-100">
+    <div class="bg-300 bg-gradient d-flex mb-auto vs-10 align-items-bottom">
+        <div class="container-fluid">
+            <div class="row px-3 my-3">
+                <div class="col-md-3 col">
+                    <Dropdown ButtonCssClass="btn-100 border border-1 border-500" MenuCssClass="w-100 max-h-40 overflow-y-scroll">
+                        <DropdownButton>
+                            Profession
+                        </DropdownButton>
+                        <DropdownMenu>
+                            <DropdownItem>
+                                <div class="d-flex">
+                                    <div class="form-check" role="checkbox">
+                                        <input class="form-check-input" @key="-1" name="check-all" id="check-all" type="checkbox" @onchange='(async (args) => await CheckAllProfessionsAsync((bool)args.Value!))' />
+                                        <label class="form-check-label" for="check-all">
+                                            Select All
+                                        </label>
+                                    </div>
+                                </div>
+                            </DropdownItem>
+                            @foreach (var profession in FormModel.ProfessionDropdown.Order())
+                            {
+                                bool isChecked = ListRequest.Professions.Any(p => p == profession);
+                                <DropdownItem>
+                                    <div class="d-flex">
+                                        @if (isChecked)
+                                        {
+                                            <div class="form-check" role="checkbox">
+                                                <input class="form-check-input"
+                                                       checked="checked"
+                                                       @key="@profession"
+                                                       name="check-@profession"
+                                                       id="check-@profession"
+                                                       type="checkbox"
+                                                       @onchange="((args) => CheckProfessionAsync((bool)args.Value!, profession))" />
+                                                <label class="form-check-label" for="check-@profession">
+                                                    @profession
+                                                </label>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="form-check" role="checkbox">
+                                                <input class="form-check-input"
+                                                       @key="@profession"
+                                                       name="check-@profession"
+                                                       id="check-@profession"
+                                                       type="checkbox"
+                                                       @onchange="((args) => CheckProfessionAsync((bool)args.Value!, profession))" />
+                                                <label class="form-check-label" for="check-@profession">
+                                                    @profession
+                                                </label>
+                                            </div>
+                                        }
+                                    </div>
+                                </DropdownItem>
+                            }
+                        </DropdownMenu>
+                    </Dropdown>
+                </div>
+                <div class="col-3">
+                    <Dropdown ButtonCssClass="btn-100 border border-1 border-500" MenuCssClass="w-100 max-h-40 overflow-y-scroll">
+                        <DropdownButton>
+                            State
+                        </DropdownButton>
+                        <DropdownMenu>
+                            <DropdownItem>
+                                <div class="d-flex">
+                                    <div class="form-check" role="checkbox">
+                                        <input class="form-check-input" @key="-1" name="check-all" id="check-all" type="checkbox" @onchange='(async (args) => await CheckAllProfessionsAsync((bool)args.Value!))' />
+                                        <label class="form-check-label" for="check-all">
+                                            Select All
+                                        </label>
+                                    </div>
+                                </div>
+                            </DropdownItem>
+                            @foreach (var currentState in Enum.GetValues<StateAbbreviation>())
+                            {
+                                bool isChecked = ListRequest.States.Any(p => p == Enum.GetName(currentState));
+                                <DropdownItem>
+                                    <div class="d-flex">
+                                        @if (isChecked)
+                                        {
+                                            <div class="form-check" role="checkbox">
+                                                <input class="form-check-input"
+                                                       checked="checked"
+                                                       @key="@currentState"
+                                                       name="check-@currentState"
+                                                       id="check-@currentState"
+                                                       type="checkbox"
+                                                       @onchange='((args) => CheckAddressStateAsync((bool)args.Value!, Enum.GetName(currentState) ?? ""))' />
+                                                <label class="form-check-label" for="check-@currentState">
+                                                    @currentState
+                                                </label>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="form-check" role="checkbox">
+                                                <input class="form-check-input"
+                                                       @key="@currentState"
+                                                       name="check-@currentState"
+                                                       id="check-@currentState"
+                                                       type="checkbox"
+                                                       @onchange='((args) => CheckAddressStateAsync((bool)args.Value!, Enum.GetName(currentState) ?? ""))' />
+                                                <label class="form-check-label" for="check-@currentState">
+                                                    @currentState
+                                                </label>
+                                            </div>
+                                        }
+                                    </div>
+                                </DropdownItem>
+                            }
+                        </DropdownMenu>
+                    </Dropdown>
+                </div>
+                <div class="col-lg-4 col-6 ms-auto justify-content-end">
+                    <EditForm Model="this" OnSubmit="AddZipToSearch">
+                        <div class="d-flex gap-2 justify-content-end">
+                            <div class="col-8">
+                                <input placeholder="Zip-code"
+                                       id="zip-input"
+                                       type="text"
+                                       pattern="^\d{5}(?:-\d{4})?$"
+                                       @bind-value="_zipcodeInput"
+                                       class="form-control h-100" />
+                            </div>
+                            <div class="col-atuo">
+                                <button class="btn btn-primary" type="submit"><i class="bi bi-plus fs-20"></i></button>
+                            </div>
+                        </div>
+                    </EditForm>
+
+                </div>
+
+            </div>
+            <div class="row px-3 my-3">
+                <div class="d-flex flex-wrap justify-content-end gap-2 col-6 max-h-4 overflow-y-auto ms-auto">
+                    @foreach (var item in ListRequest.Zipcodes)
+                    {
+                        <div class="badge bg-primary rounded rounded-5 text-bg-primary text-nowrap">
+                            @item <a class="link icon-link" @onclick="(() => RemoveZipFromSearch(item))"><i class="bi bi-x text-bg-primary cursor-pointer"></i></a>
+                        </div>
+                    }
+                </div>
+
+            </div>
+            @* <div class="d-flex w-100 mt-3 px-3">
+                <div class="col-md-3">
+                    <div class="form-floating">
+
+                        <select @onchange="((args) => SelectList(args))" class="form-select">
+                            <option value="-1">Select One</option>
+                            @foreach (var list in FormModel.SendLists)
+                            {
+                                <option value="@list.Value">@list.Key</option>
+                            }
+                        </select>
+                        <label>Your Lists</label>
+                    </div>
+                    <label class="col-form-label">Add zip-codes to the search</label>
+                    <div class="d-flex flex-nowrap">
+                        <input class="form-control me-3" placeholder="Zip-code" type="text" pattern="^\d{5}(?:-\d{4})?$" @onchange='((args) => _zipcode = args.Value?.ToString())' />
+                        <button class="btn btn-primary" type="button" @onclick="AddZipcodeToSearch">
+                            <i class="bi bi-plus text-white"></i>
+                        </button>
+                    </div>
+                </div>
+            </div> *@
+        </div>
+    </div>
+    <hr class="border-700 opacity-100 my-auto" />
+    <div class="d-flex w-100 px-3 my-2 vs-3 bg-200 bg-gradient">
+        <div class="col-auto">
+            <button class="btn btn-orange-300" type="button" @onclick="(() => ListRequest = new())">
+                Clear Search
+            </button>
+        </div>
+        <div class="fs-16 text-dark col-6 ps-5 ms-auto me-md-5">
+            <b>Total Contacts</b> @ContactsTotal
+        </div>
+    </div>
+</div>
+
+@code {
+
+
+    public ListFormModel FormModel { get; set; } = new();
+
+    public int ContactsTotal { get; set; }
+
+    [Parameter]
+    public EventCallback<SendListRequest> ListRequestChanged { get; set; }
+
+    [Parameter]
+    public SendListRequest ListRequest { get; set; } = new();
+
+    string _zipcodeInput = "";
+    int _selectedList;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await RefreshFormOptions();
+            await CountAll();
+            await InvokeAsync(StateHasChanged);
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    public async Task RefreshFormOptions()
+    {
+
+        var professionResponse = await _http.GetListFormOptions();
+        if (!professionResponse.Success)
+        {
+            _logger.LogError("Error from profession list endpoint\n{Error}", professionResponse);
+            return;
+        }
+        FormModel = professionResponse.Data ?? new();
+    }
+
+    private async Task CountAll()
+    {
+
+        ListRequest.CountAll = true;
+        var response = await _http.QuerySendListAsync(ListRequest);
+        if (response.Success)
+            ContactsTotal = response.Data;
+        else
+            ContactsTotal = 0;
+
+        await ListRequestChanged.InvokeAsync(ListRequest);
+    }
+
+    private async Task QueryList()
+    {
+        ListRequest.CountAll = ListRequest.States.Count == 0 && ListRequest.Professions.Count == 0 && ListRequest.Zipcodes.Count == 0;
+        var response = await _http.QuerySendListAsync(ListRequest);
+        if (response.Success)
+            ContactsTotal = response.Data;
+        else
+            ContactsTotal = 0;
+
+        await ListRequestChanged.InvokeAsync(ListRequest);
+    }
+
+
+    // private async Task UserSearch(ChangeEventArgs args)
+    // {
+
+    //     var response = await _http.SearchCountAsync(args.Value?.ToString() ?? "");
+
+    //     if (response.Success)
+    //         ContactsTotal = response.Data;
+    //     else
+    //         ContactsTotal = 0;
+    // }
+
+    private async Task CheckAddressStateAsync(bool isChecked, string stateName)
+    {
+
+        if (isChecked && !ListRequest.States.Contains(stateName))
+            ListRequest.States.Add(stateName);
+        else if (!isChecked && ListRequest.States.Contains(stateName))
+            ListRequest.States.Remove(stateName);
+        await QueryList();
+    }
+    private async Task RemoveZipcodeToSearch(string zipcode)
+    {
+        ListRequest.States.Remove(zipcode);
+        await QueryList();
+    }
+
+    private async Task CheckProfessionAsync(bool isChecked, string profession)
+    {
+        _logger.LogInformation("Checking Profession {profession} {isChecked}", profession, isChecked);
+        if (isChecked && !ListRequest.Professions.Contains(profession))
+            ListRequest.Professions.Add(profession);
+        else if (!isChecked && ListRequest.Professions.Contains(profession))
+            ListRequest.Professions.Remove(profession);
+        await QueryList();
+    }
+    private async Task CheckZipcodeAsync(bool isChecked, string zipcode)
+    {
+        if (isChecked && !ListRequest.Zipcodes.Contains(zipcode))
+            ListRequest.Zipcodes.Add(zipcode);
+        else if (!isChecked && ListRequest.Zipcodes.Contains(zipcode))
+            ListRequest.Zipcodes.Remove(zipcode);
+        await QueryList();
+    }
+    private async Task CheckAllProfessionsAsync(bool isChecked)
+    {
+        if (isChecked)
+        {
+            ListRequest.Professions = FormModel.ProfessionDropdown.GetRange(0, FormModel.ProfessionDropdown.Count);
+            ListRequest.CountAll = true;
+        }
+        else
+            ListRequest.Professions.Clear();
+
+        // Don't use Count All in order to preserve any other filters
+        await QueryList();
+    }
+    private async Task CheckAllZipcodesAsync(bool isChecked)
+    {
+        if (isChecked)
+        {
+            ListRequest.Zipcodes = FormModel.Zipcodes.Where(z => z.Value).Select(z => z.Key).ToList();
+            ListRequest.CountAll = true;
+        }
+        else
+            ListRequest.Zipcodes.Clear();
+
+        // Don't use Count All in order to preserve any other filters
+        await QueryList();
+    }
+    private async Task SelectList(ChangeEventArgs args)
+    {
+        Console.WriteLine(args.AsString());
+        var listId = Convert.ToInt32(args.Value);
+        _selectedList = listId;
+        if (listId > 0)
+        {
+            var response = await _http.GetCountForListAsync(listId);
+            if (response.Success)
+            {
+                ContactsTotal = response.Data;
+            }
+            var professionResponse = await _http.GetProfessionsForListAsync(listId);
+            if (professionResponse.Success)
+            {
+                ListRequest.Professions = professionResponse.Data?.Professions ?? [];
+            }
+        }
+        else
+            await CountAll();
+    }
+    private void SelectedAllZips(ChangeEventArgs args)
+    {
+        foreach (var item in FormModel.Zipcodes.Keys)
+        {
+            FormModel.Zipcodes[item] = (bool?)args.Value ?? false;
+        }
+    }
+    private async Task AddZipToSearch(EditContext args)
+    {
+        ListRequest.Zipcodes.Add(_zipcodeInput);
+        _zipcodeInput = "";
+        await InvokeAsync(StateHasChanged);
+        ListRequest.CountAll = false;
+        await QueryList();
+    }
+    private async Task RemoveZipFromSearch(string zip)
+    {
+        ListRequest.Zipcodes.Remove(zip);
+        await InvokeAsync(StateHasChanged);
+    }
+}

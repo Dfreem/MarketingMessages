@@ -1,0 +1,23 @@
+@font-face {
+    font-family: 'Reddit Sans Italic';
+    src: url('../fonts/RedditSans-Italic-VariableFont_wght.ttf') format('truetype');
+}
+@font-face {
+    font-family: 'Reddit Sans';
+    src: url('../fonts/RedditSans-VariableFont_wght.ttf') format('truetype');
+}
+@for $weight from 10 through 100 {
+    .reddit-sans-#{calc($weight * 10)} {
+        font-family: "Reddit Sans", sans-serif;
+        font-optical-sizing: auto;
+        font-weight: calc($weight * 10);
+        font-style: normal;
+    }
+}
+
+.bi.thick {
+    &:before {
+        font-weight: 600;
+    }
+}
+

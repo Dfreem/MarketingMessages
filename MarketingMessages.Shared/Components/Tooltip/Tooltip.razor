@@ -1,0 +1,68 @@
+﻿@using MarketingMessages.Shared.Components.Tooltip.Models
+@using MarketingMessages.Shared.Extensions
+@inject IJSRuntime _js
+@rendermode @(new InteractiveWebAssemblyRenderMode(false))
+
+@if (Anchor)
+{
+
+    <a @onclick='Click' class='@Class'
+       data-bs-offset="@(String.Join(',', Offset))"
+       data-bs-toggle="tooltip"
+       data-bs-config='{ "delay": { "show": @DelayShow, "hide": @DelayHide } }'
+       data-bs-container="body"
+       data-bs-trigger="manual hover focus"
+       data-bs-placement="@Position.Kabobify()"
+       data-bs-title="@Title">
+        @ChildContent
+    </a>
+}
+else
+{
+
+    <span class='@Class'
+          data-bs-container="body"
+          data-bs-offset="@(String.Join(',', Offset))"
+          data-bs-config='{ "delay": { "show": @DelayShow, "hide": @DelayHide } }'
+          data-bs-toggle="tooltip"
+          data-bs-trigger="manual hover focus"
+          data-bs-placement="@Position.Kabobify()"
+          data-bs-title="@Title">
+        @ChildContent
+    </span>
+
+
+}
+@code {
+    [Parameter, EditorRequired]
+    public string Title { get; set; }
+
+    [Parameter]
+    public string? Class { get; set; }
+
+    [Parameter]
+    public TooltipPosition Position { get; set; }
+
+    [Parameter]
+    public int[] Offset { get; set; } = [0, 0];
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public EventCallback OnClick { get; set; }
+
+    [Parameter]
+    public int DelayHide { get; set; }
+
+    [Parameter]
+    public int DelayShow { get; set; }
+
+    [Parameter]
+    public bool Anchor { get; set; }
+
+    private async Task Click()
+    {
+        await OnClick.InvokeAsync();
+    }
+}

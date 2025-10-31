@@ -1,0 +1,17 @@
+[
+  {
+    "Name": "New Profile",
+    "Projects": [
+      {
+        "Path": "TrunkMonkey\\TrunkMonkey\\MarketingMessages.csproj",
+        "Action": "Start",
+        "DebugTarget": "https"
+      },
+      {
+        "Path": "EmailScheduleService\\EmailScheduleService.csproj",
+        "Action": "Start",
+        "DebugTarget": "EmailScheduleService"
+      }
+    ]
+  }
+]

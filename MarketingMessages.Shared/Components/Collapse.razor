@@ -1,0 +1,68 @@
+﻿@inject IJSRuntime _js
+<div class="collapse @(Class) @(Horizontal ? "collapse-horizontal" : "")" id="@Id">
+    @ChildContent
+</div>
+
+@code {
+    [Parameter]
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+
+    [Parameter]
+    public string? Class { get; set; }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnCollapsing { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnExpanding { get; set; }
+
+    [Parameter]
+    public bool Horizontal { get; set; }
+
+    public bool Open { get; private set; }
+
+    private IJSObjectReference? _module;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _module = await _js.InvokeAsync<IJSObjectReference>("import", "./_content/MarketingMessages.Shared/js/collapse.js");
+            DotNetObjectReference<Collapse> selfRef = DotNetObjectReference.Create(this);
+            await _module.InvokeVoidAsync("registerCollapseEvents", selfRef, nameof(Collapsing), nameof(Showing));
+        }
+        await base.OnAfterRenderAsync(firstRender);
+
+    }
+    public async Task CollapseAsync()
+    {
+        if (_module is null) return;
+        Open = false;
+        await _module.InvokeVoidAsync("collapse", Id);
+    }
+    public async Task ExpandAsync()
+    {
+        if (_module is null) return;
+        Open = true;
+        await _module.InvokeVoidAsync("expand", Id, true);
+    }
+
+    [JSInvokable]
+    public async Task Collapsing()
+    {
+        await OnCollapsing.InvokeAsync(Id);
+        Open = false;
+    }
+
+    [JSInvokable]
+    public async Task Showing()
+    {
+        await OnExpanding.InvokeAsync(Id);
+        Open = true;
+    }
+
+
+}

@@ -1,0 +1,35 @@
+﻿@page "/admin"
+@attribute [StreamRendering]
+@rendermode @(new InteractiveWebAssemblyRenderMode(false))
+@attribute [Authorize("Admin")]
+<PageTitle>Admin</PageTitle>
+
+
+<Tabs @bind-ActiveTab="@_activeTab">
+    <TabCollection>
+        <Tab Name="application-logs">
+            Application Logs
+        </Tab>
+        <Tab Name="settings">
+            Settings
+        </Tab>
+    </TabCollection>
+    <TabPanels>
+        <TabPanel Name="application-logs">
+            <div class="overflow-y-auto overflow-x-hidden">
+                <ApplicationLogs />
+            </div>
+        </TabPanel>
+        <TabPanel Name="settings">
+            <div class="overflow-y-auto overflow-x-hidden">
+                <Settings />
+            </div>
+        </TabPanel>
+    </TabPanels>
+</Tabs>
+@code {
+    string _activeTab = "application-logs";
+
+
+
+}

@@ -1,0 +1,59 @@
+﻿@using MarketingMessages.Shared.Components.Tabs
+@implements ITab
+
+<button role="tab" @onclick='SwitchTabs' class='@("tab " + Class)'>
+    @ChildContent
+</button>
+
+@code {
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [CascadingParameter]
+    public Tabs? TabManager { get; set; }
+
+    [Parameter]
+    public string Class { get; set; } = "";
+
+    public bool Active { get; set; }
+
+    [Parameter, EditorRequired]
+    public string Name { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (TabManager != null)
+        {
+            TabManager.OnTabSwitched += async (_, name) =>
+                {
+                    if (name != Name)
+                        await Hide();
+                    // if the tab is the one clicked, it will handle showing itself
+
+                };
+        }
+        base.OnInitialized();
+    }
+
+    public async Task Show()
+    {
+        Active = true;
+        if (!Class.Contains("active"))
+            Class += " active";
+        await InvokeAsync(StateHasChanged);
+
+    }
+    public async Task Hide()
+    {
+        Active = false;
+        Class = Class.Replace("active", "").Trim();
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SwitchTabs()
+    {
+        if (TabManager is not null)
+            TabManager.TabClicked(Name);
+        await Show();
+    }
+}

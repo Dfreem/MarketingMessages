@@ -1,0 +1,41 @@
+@use "sass:color";
+
+.navbar {
+    //margin-bottom: 1em;
+    //border-bottom: 2px solid #{$gray-400};
+    box-shadow: 2px 3px 10px -1px #{$gray-400};
+    //height: 3.5rem;
+}
+
+.navbar-brand {
+    font-size: 22pt;
+    font-family: Roboto;
+    font-optical-sizing: auto;
+    font-weight: 420;
+    color: #{$gray-700};
+}
+
+.nav-item {
+    font-size: 14pt;
+}
+
+.nav-link.active {
+    font-weight: 500;
+}
+
+
+@each $color, $value in $theme-colors {
+    .nav-item-#{$color} {
+        --bs-nav-link-color: #{$value};
+        --bs-nav-link-hover-color: color.adjust($value, $lightness: -10%);
+        --bs-nav-link-disabled-color: color.adjust($value, $lightness: -30%);
+        --bs-nav-link-active-bg: #{$value};
+
+        & :hover {
+        }
+
+        & .active {
+            border: 2px solid color.adjust($value, $lightness: -10%);
+        }
+    }
+}

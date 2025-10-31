@@ -1,0 +1,109 @@
+﻿@page "/"
+@using BlazorExpress.ChartJS
+@using MarketingMessages.Client.Services.HttpService
+
+@attribute [StreamRendering]
+@attribute [Authorize]
+@rendermode @(new InteractiveWebAssemblyRenderMode(false))
+
+@inject IHTTPService _http
+@inject IToastService _toast
+@inject AuthenticationStateProvider _authState
+
+<PageTitle>Home</PageTitle>
+<div class="container">
+    <div class="d-flex my-4">
+        <h3 class="text-600 ">Hello @_currentUser</h3>
+    </div>
+
+
+    <div class="d-flex w-100 mb-3">
+        <div class="col-md-auto me-3">
+            <InputDate @bind-Value="Statistics.SearchStartTime" @bind-Value:after="SearchStats" class="form-control" />
+        </div>
+        <div class="col-auto me-3">
+            <InputDate @bind-Value="Statistics.SearchEndTime" @bind-Value:after="SearchStats" class="form-control" />
+        </div>
+    </div>
+    <div class="d-flex mt-2 mb-3 ps-2">
+        <label class="text-600 fs-12 fw-medium">Currently Displaying:</label>
+        <span class="ms-3 fs-12">
+            @Statistics.SearchStartTime.ToString("MMM dd") through @Statistics.SearchEndTime.ToString("dd")
+
+        </span>
+    </div>
+    <div class="d-flex justify-content-center gap-3 mb-3 mx-auto px-5">
+        <Card Class="col-4 shadow bg-200">
+            <CardBody>
+                <h5 class="text-700">Sent</h5>
+                <h1 class="user-select-none text-center text-600">@Statistics.TotalEmailsSent</h1>
+            </CardBody>
+        </Card>
+        <Card Class="col-4 shadow bg-200">
+            <CardBody>
+                <h5 class="text-700">Bounces</h5>
+                <h1 class="user-select-none text-center text-600">@Statistics.TotalBounces</h1>
+            </CardBody>
+        </Card>
+        <Card Class="col-4 shadow bg-200">
+            <CardBody>
+                <h5 class="text-700">Delivered</h5>
+                <h1 class="user-select-none text-center text-600">@Statistics.TotalDelivered</h1>
+            </CardBody>
+        </Card>
+    </div>
+    <div class="d-flex justify-content-center gap-3 mb-3 mx-auto px-5">
+        <Card Class="col-md-4 shadow bg-200">
+            <CardBody>
+                <h5 class="text-700">Clicks</h5>
+                <h1 class="user-select-none text-center text-600">@Statistics.TotalClicks</h1>
+            </CardBody>
+        </Card>
+        <Card Class="col-md-4 shadow bg-200">
+            <CardBody>
+                <h5 class="text-700">Opens</h5>
+                <h1 class="user-select-none text-center text-600">@Statistics.TotalOpens</h1>
+            </CardBody>
+        </Card>
+        <div class="col-md-4"></div>
+    </div>
+
+    <hr class="my-5" />
+    <div class="d-flex justify-content-center gap-3 mb-3 mx-auto px-5">
+        <Card Class="w-100 shadow col-md-12 bg-200">
+            <CardBody>
+                <div class="d-flex w-100">
+                    <h5 class="text-700">Active Campaigns</h5>
+                    <div class="mx-3">@Statistics.TotalCampaigns</div>
+                </div>
+
+            </CardBody>
+        </Card>
+    </div>
+</div>
+
+@code {
+    public StatisticsModel Statistics { get; set; } = new();
+
+    private LineChart _lineChart = new();
+    private LineChartOptions _chartOptions = default!;
+    private ChartData _data = default!;
+
+    private string? _currentUser;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            Statistics = await _http.GetStatisticsAsync(null, null);
+            var user = await _authState.GetAuthenticationStateAsync();
+            _currentUser = user.User.Identity?.Name;
+            await InvokeAsync(StateHasChanged);
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+    private async Task SearchStats()
+    {
+        Statistics = await _http.GetStatisticsAsync(Statistics.SearchStartTime, Statistics.SearchEndTime);
+    }
+}

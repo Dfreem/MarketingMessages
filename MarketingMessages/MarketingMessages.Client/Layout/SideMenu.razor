@@ -1,0 +1,145 @@
+﻿@using MarketingMessages.Shared.Components.Dropdown
+@inject NavigationManager _nav
+
+<div class="menu-width">
+
+    <div class="sidebar d-flex flex-column @Collapse">
+        <nav class="nav nav-fill nav-pills flex-column pt-4">
+            <div class="nav-item">
+                <NavLink class="nav-link bg-green-100 border border-2 border-green-300 link icon-link icon-link-hover d-flex align-items-center" href="/Create">
+                    <span class="text-success fw-medium @Collapse">
+                        Create
+                    </span>
+                    <i class='fa fa-plus @(_isCollapsed ? "mx-auto" : "ms-auto me-2")'></i>
+                </NavLink>
+            </div>
+            <div class="nav-item">
+                <NavLink class="nav-link link icon-link icon-link-hover d-flex align-items-center" href="/" Match="NavLinkMatch.All">
+                    <span class="fw-medium @Collapse">
+                        Home
+                    </span>
+                    <i class='fa fa-house text-600 @(_isCollapsed ? "mx-auto" : "ms-auto me-2")'></i>
+                </NavLink>
+            </div>
+            <div class="nav-item">
+                <NavLink class="nav-link link icon-link icon-link-hover d-flex align-items-center" href="/campaigns" Match="NavLinkMatch.Prefix">
+                    <span class="fw-medium me-auto @Collapse">
+                        Campaigns
+                    </span>
+                    <i class="fa fa-bullhorn text-600  @(_isCollapsed ? "mx-auto" : "ms-auto me-2")"></i>
+                </NavLink>
+            </div>
+            <div class="nav-item">
+                @if (!_isCollapsed)
+                {
+
+                    <NavLink class="nav-link link icon-link icon-link-hover d-flex align-items-center" href="/audience">
+                        <span class="fw-medium me-auto @Collapse">
+                            Audience
+                        </span>
+                        <i class="fa fa-address-book text-600  @(_isCollapsed ? "mx-auto" : "ms-auto me-2")"></i>
+                    </NavLink>
+
+                    @if (_relativePath.StartsWith("/audience"))
+                    {
+                        <ul class="nav nav-fill nav-pills flex-column pt-2 ps-4">
+                            <li class="nav-item">
+                                <NavLink class="nav-link fs-12 link icon-link icon-link-hover d-flex align-items-center" href="/audience" Match="NavLinkMatch.All">
+                                    Segments
+                                </NavLink>
+                            </li>
+                            <li class="nav-item">
+                                <NavLink class="nav-link fs-12 link icon-link icon-link-hover d-flex align-items-center" href="/audience/contacts" Match="NavLinkMatch.All">
+                                    Contacts
+                                </NavLink>
+                            </li>
+                            <li class="nav-item">
+                                <NavLink class="nav-link fs-12 link icon-link icon-link-hover d-flex align-items-center" href="/audience/manage" Match="NavLinkMatch.All">
+                                    Manage
+                                </NavLink>
+                            </li>
+                        </ul>
+                    }
+                }
+                else
+                {
+                    <Dropdown>
+                        <DropdownButton>
+                            <NavLink class="nav-link link icon-link icon-link-hover d-flex align-items-center" href="/audience">
+                                <i class="fa fa-address-book text-600  @(_isCollapsed ? "mx-auto" : "ms-auto me-2")"></i>
+                            </NavLink>
+                        </DropdownButton>
+                        <DropdownMenu>
+                            <DropdownItem>
+                                <NavLink class="nav-link fs-12 link icon-link icon-link-hover d-flex align-items-center" href="/audience" Match="NavLinkMatch.All">
+                                    Segments
+                                </NavLink>
+                            </DropdownItem>
+                            <DropdownItem>
+                                <NavLink class="nav-link fs-12 link icon-link icon-link-hover d-flex align-items-center" href="/audience/contacts" Match="NavLinkMatch.All">
+                                    Contacts
+                                </NavLink>
+                            </DropdownItem>
+                            <DropdownItem>
+                                <NavLink class="nav-link fs-12 link icon-link icon-link-hover d-flex align-items-center" href="/audience/manage" Match="NavLinkMatch.All">
+                                    Manage
+                                </NavLink>
+                            </DropdownItem>
+                        </DropdownMenu>
+                    </Dropdown>
+                }
+
+            </div>
+            <div class="nav-item">
+                <NavLink class="nav-link link icon-link icon-link-hover d-flex align-items-center" href="/content">
+                    <span class="fw-medium me-auto @Collapse">
+                        Content
+                    </span>
+                    <i class="fa fa-images text-600  @(_isCollapsed ? "mx-auto" : "ms-auto me-2")"></i>
+                </NavLink>
+            </div>
+            <div class="nav-item">
+                <NavLink class="nav-link link icon-link icon-link-hover d-flex align-items-center" href="/analytics">
+                    <span class="fw-medium me-auto @Collapse">
+                        Analytics
+                    </span>
+                    <i class="fa fa-house text-600  @(_isCollapsed ? "mx-auto" : "ms-auto me-2")"></i>
+                </NavLink>
+            </div>
+        </nav>
+        <a @onclick="ToggleCollapse" class="link icon-link ms-3 me-auto mt-auto mb-5 fs-22 ">
+            @if (_isCollapsed)
+            {
+                <i class="bi bi-chevron-bar-right"></i>
+            }
+            else
+            {
+                <i class="bi bi-chevron-bar-left"></i>
+            }
+        </a>
+    </div>
+</div>
+
+@code {
+    string _relativePath = "";
+
+    public string Collapse { get => _isCollapsed ? "menu-collapse" : ""; }
+    bool _isCollapsed;
+
+    protected override void OnInitialized()
+    {
+
+        _nav.LocationChanged += async (SenderModel, args) =>
+        {
+            _relativePath = new Uri(args.Location).LocalPath;
+            await InvokeAsync(StateHasChanged);
+        };
+        base.OnInitialized();
+    }
+
+    public async Task ToggleCollapse()
+    {
+        _isCollapsed = !_isCollapsed;
+        await InvokeAsync(StateHasChanged);
+    }
+}

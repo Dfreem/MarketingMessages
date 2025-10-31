@@ -1,0 +1,424 @@
+﻿@page "/Create"
+@using MarketingMessages.Shared
+
+@attribute [StreamRendering]
+@attribute [Authorize]
+@rendermode @(new InteractiveWebAssemblyRenderMode(false))
+
+@inject IHTTPService _http
+@inject UnsubscribeGroupService _unsubscribeGroupService
+@inject IToastService _toast
+@inject IJSRuntime _js
+@inject NavigationManager _nav
+@inject CampaignService _campaignsService
+@inject ContentService _contentService
+<PageTitle>Create Campaign</PageTitle>
+
+
+<div class="container-fluid max-w-100">
+    <div class="d-flex my-4">
+        <h3 class="text-600 ">Create a Campaign</h3>
+    </div>
+
+    <div class="d-flex w-100 w-100">
+
+        <EditForm class="col" EditContext="_editContext" FormName="create-form" OnValidSubmit="SendOrSchedule">
+            <div class="d-flex flex-column gap-3">
+
+                @if (_initialized)
+                {
+                    <div class="d-flex gap-5 col-md px-3">
+                        <div class="col-auto">
+                            <label class="col-form-label">
+                                Campaign Name
+                            </label>
+                            <InputText class="form-control" @bind-Value="Model.DocumentTitle" />
+                        </div>
+                    </div>
+                    <div class="d-flex gap-5 col-md px-3">
+                        <!-- ========== Subject ========== -->
+
+                        <div class="col-4">
+                            <label class="col-form-label">
+                                Subject
+                            </label>
+                            @* <p>
+                            What is this email about?
+                        </p> *@
+                            <input type="text"
+                                   placeholder="Subject"
+                                   class="form-control border-2 border-400"
+                                   required
+                                   @onchange="SubjectChanged"
+                                   value="@Model.Subject" />
+                        </div>
+                        <div class="col-4">
+                            <label class="col-form-label">
+                                Content
+                            </label>
+                            <select @onchange="ContentSelected" class="form-select form-control border-2 border-400">
+                                <option>Select Content</option>
+                                @foreach (var content in ContentDropdown)
+                                {
+                                    if (content.Value)
+                                    {
+                                        <option selected="selected" value="@content.Key.ContentId">@content.Key.Name</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@content.Key.ContentId">@content.Key.Name</option>
+                                    }
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-5 col-md px-3">
+
+                        <div class="col-auto">
+                            <label class="col-form-label"> From </label>
+                            @if (_initialized && _sender is null)
+                            {
+                                _readyToSend["from"] = false;
+                                <p>
+                                    It looks like you need to <NavLink href="#" class="link link-primary">register your sender email.  </NavLink>
+                                </p>
+                            }
+                            else if (_initialized && _sender is not null)
+                            {
+                                _readyToSend["from"] = true;
+                                @* <p>
+                                The email will be sent with this email in the from field.
+                            </p> *@
+                                <div class="fw-medium">
+                                    @_sender.ReplyTo
+                                </div>
+                            }
+
+                        </div>
+                        <div class="col-auto">
+
+                            <label class="col-form-label">
+                                To
+                            </label>
+                            @* <p>Who is the audience for this campaign?</p> *@
+                            <div class="d-flex">
+                                <div class="col-auto">
+                                    @if (AudienceDropdown.Count == 0)
+                                    {
+                                        <p>You don't have an audience yet. <NavLink href="/audience">Create an audience</NavLink></p>
+                                    }
+                                    else
+                                    {
+                                        <label class="fs-12 fw-normal text-700">
+                                            Audiences
+                                        </label>
+                                        <InputSelect class="link link-primary border-0 cursor-pointer align-items-end bg-transparent col-auto mx-3"
+                                                     @bind-Value="Model.AudienceId"
+                                                     @bind-Value:after="AfterSelectAudience">
+                                            <option value="0">select one</option>
+                                            @foreach (var item in AudienceDropdown)
+                                            {
+                                                <option value="@item.Key">@item.Value</option>
+                                            }
+                                        </InputSelect>
+                                        <div class="text-danger">
+                                            <ValidationMessage For="() => Model.AudienceId" />
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+
+                    <!-- ========== Send Time ========== -->
+
+                    <div class="col-auto">
+                        <div class="form-check">
+                            <label class="form-check-label">Send Now</label>
+                            <input class="form-check-input" checked="@(Model.SendNow)" type="radio" @onchange="(async () => await SetSendNow(true))" name="send-now" />
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <div class="form-check">
+                            <label class="form-check-label">Schedule</label>
+                            <input class="form-check-input" checked="@(!Model.SendNow)" type="radio" @onchange="(async () => await SetSendNow(false))" name="send-now" />
+                        </div>
+                    </div>
+                    @if (Model.SendNow)
+                    {
+                        <div class="d-flex ms-5 mb-2 gap-3">
+
+                            <div class="col-auto">
+                                <input disabled type="datetime-local" class="form-control border-600" @bind-value="@Model.StartTime" @bind-value:after="AfterSendTimeChanged" />
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="d-flex ms-5 mb-2 gap-3">
+                            <div class="col-5">
+                                <label class="col-form-label">Send On</label>
+                                <input type="datetime-local" class="form-control border-600" required @bind-value="@Model.StartTime" />
+                            </div>
+                        </div>
+
+                    }
+
+                }
+            </div>
+        </EditForm>
+        <div class="ms-auto col px-3">
+            <label class="form-col-label">@Model.Subject</label>
+            <div class="mt-3" style="transform: scale(.7);">
+                @((MarkupString)(Model?.EditorContent.HtmlContent ?? ""))
+            </div>
+        </div>
+    </div>
+</div>
+
+<Modal @ref="_loading" Id="loading-modal" Class="loading-modal">
+    <ModalBody>
+        <div class="d-flex w-100 mt-auto justify-content-center align-items-center">
+            <div class="spinner-border spinner-grow text-600"></div>
+            <label class="col-form-label">@_loadingMessage...</label>
+        </div>
+    </ModalBody>
+</Modal>
+
+<ContentPreviewModal ContentSelected="ContentSelected" />
+
+@code {
+
+    public bool EditorIsReady { get; set; }
+
+    // Form Options
+    public Dictionary<int, string> AudienceDropdown { get; set; } = [];
+    public Dictionary<EmailContentResponse, bool> ContentDropdown { get; set; } = [];
+    public WizardRequest Model { get; set; } = new();
+
+    EditContext? _editContext;
+    ValidationMessageStore? _validationMessages;
+    SenderModel? _sender;
+    Modal _loading = new();
+    List<SuppressionGroupModel> _userGroups = [];
+
+    bool _initialized;
+    bool _editName;
+    string? _contentPreview;
+    string _loadingMessage = "Loading";
+
+    Dictionary<string, bool> _collapse = new()
+    {
+        {"to", false},
+        {"subject", false},
+        {"send-time", false},
+        {"content", false},
+    };
+
+    Dictionary<string, bool> _readyToSend = new()
+    {
+        {"to", false},
+        {"from", false},
+        {"subject", false},
+        {"send-time", false},
+        {"content", false},
+    };
+
+    List<string> _ignore = [
+        "ContactId",
+        "Profession2",
+        "Custom",
+        "Custom1",
+        "Custom2",
+        "CreatedOn",
+        "CreatedBy",
+        "ModifiedBy",
+        "ModifiedOn"
+    ];
+
+    protected override async Task OnInitializedAsync()
+    {
+        _editContext = new(Model);
+        _validationMessages = new(_editContext);
+        _initialized = true;
+        Model.SendNow = false;
+        Model.StartTime = DateTime.Now;
+        _readyToSend["send-time"] = true;
+        await base.OnInitializedAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var audienceResponse = await _http.GetAudienceFormRowsAsync();
+            AudienceDropdown = audienceResponse.ToDictionary(a => a.SegmentId, a => a.Title);
+            _sender = await _http.GetUserSenderAsync();
+            if (_sender is not null)
+                _readyToSend["from"] = true;
+
+            var savedValue = await _js.InvokeAsync<string?>("getFromSession", BrowserStorageKeys.EDITOR_CONTENT);
+            if (!String.IsNullOrEmpty(savedValue))
+            {
+                Model.EditorContent = JsonSerializer.Deserialize<HtmlEditorContent>(savedValue) ?? new();
+                _readyToSend["content"] = true;
+            }
+            _userGroups = await _unsubscribeGroupService.GetUserGroupsAsync();
+            var contentResponse = await _contentService.GetUserContentAsync();
+            ContentDropdown = contentResponse.ToDictionary(c => c, _ => false);
+            await InvokeAsync(StateHasChanged);
+            // _nav.RegisterLocationChangingHandler(async (ctx) =>
+            // {
+            //     await _js.InvokeVoidAsync("saveToSession", BrowserStorageKeys.EDITOR_CONTENT, JsonSerializer.Serialize(EditorContent));
+            // });
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    private void HandleValidation(object? sender, ValidationRequestedEventArgs args)
+    {
+        _validationMessages?.Clear();
+        if (Model.AudienceId == 0)
+            _validationMessages?.Add(() => Model.AudienceId, "Please select an audience to send emails to.");
+        if (Model.ContentId == 0)
+            _validationMessages?.Add(() => Model.ContentId, "Please select or create the content of the email.");
+    }
+
+    private async Task SaveForLater(MouseEventArgs args)
+    {
+        Model.SubNames = Model.EditorContent.TemplateVariableNames;
+        Model.SenderId = _sender!.SenderId;
+        Model.SendNow = false;
+        Model.IsEnabled = false;
+        var details = await _campaignsService.SaveCampaignAsync(Model);
+        if (details.Success)
+        {
+            _nav.NavigateTo("/campaigns");
+        }
+        else
+        {
+            Model = new();
+            _toast.Error("Unable to dave campaign");
+        }
+    }
+    private async Task SendOrSchedule(EditContext args)
+    {
+        _loadingMessage = Model.SendNow ? "Sending Messages" : "Scheduling Message";
+        await _loading.Show();
+
+        var response = await _contentService.SaveContentAsync(Model.EditorContent);
+        string wasScheduled = Model.SendNow ? "sent emails" : "scheduled campaign";
+        await _loading.Hide();
+        _loadingMessage = "Loading...";
+        if (response.Success)
+        {
+            _toast.Success($"Successfully {wasScheduled}");
+            Model = new();
+            await _js.InvokeVoidAsync("removeFromSession", BrowserStorageKeys.EDITOR_CONTENT);
+            _nav.NavigateTo("/campaigns");
+        }
+        else
+            _toast.Error($"Unable to {wasScheduled}");
+    }
+
+    private async Task SendTestEmail(MouseEventArgs args)
+    {
+        // EmailSchedule request = new()
+        // {
+        //     ContentId = EditorContent.ContentId,
+        //     EmailSubject = Model.Subject,
+        //     JobType = EmailJobType.Test,
+        //     SubNames = EditorContent.TemplateVariableNames,
+        //     HtmlContent = EditorContent.HtmlContent,
+        //     TextContent = EditorContent.TextContent,
+        //     SendNow = true,
+        //     StartDate = DateTime.Now
+        // };
+        _loadingMessage = "Sending Test Message";
+        await _loading.Show();
+        var response = await _http.SendTestEmail(Model.EditorContent);
+        await _loading.Hide();
+        _loadingMessage = "Loading";
+        if (response.Success)
+            _toast.Success("Test email has been queued to be sent.");
+        else
+            _toast.Error(response.Error ?? "Unable to send test email.");
+
+    }
+
+    private async Task SetSendNow(bool sendNow)
+    {
+        Model.SendNow = sendNow;
+        if (sendNow) _readyToSend["send-time"] = true;
+        else if (Model.StartTime >= DateTime.Now) _readyToSend["send-time"] = true;
+        else _readyToSend["send-time"] = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task AfterSelectAudience()
+    {
+        if (Model.AudienceId == 0)
+            _readyToSend["to"] = false;
+        else
+            _readyToSend["to"] = true;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task AfterSendTimeChanged()
+    {
+        if (Model.SendNow || Model.StartTime < DateTime.Now) _readyToSend["send-time"] = false;
+        else _readyToSend["send-time"] = true;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SubjectChanged(ChangeEventArgs args)
+    {
+        Model.Subject = args.Value?.ToString() ?? "";
+        if (String.IsNullOrEmpty(Model.Subject)) _readyToSend["subject"] = false;
+        else _readyToSend["subject"] = true;
+        await InvokeAsync(StateHasChanged);
+    }
+    private async Task AfterContentChanged()
+    {
+        if (String.IsNullOrEmpty(Model.EditorContent.HtmlContent)) _readyToSend["content"] = false;
+        else _readyToSend["content"] = true;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private void ContentSelected(ChangeEventArgs args)
+    {
+        int contentId = Convert.ToInt32(args.Value);
+        var content = ContentDropdown.Keys.FirstOrDefault(c => c.ContentId == contentId);
+        foreach (var item in ContentDropdown)
+        {
+            ContentDropdown[item.Key] = false;
+        }
+        if (content is not null)
+        {
+            ContentDropdown[content] = true;
+            Model.EditorContent = content.AsEditorContent();
+        }
+
+    }
+
+    private void ContentSelected(HtmlEditorContent args)
+    {
+        Model.EditorContent = args;
+        if (!String.IsNullOrEmpty(Model.EditorContent.HtmlContent))
+            _readyToSend["content"] = true;
+        else
+            _readyToSend["content"] = false;
+
+    }
+    // private void AddGroupToMail(ChangeEventArgs args, UnsubscribeGroupModel group)
+    // {
+    //     _userGroups[group] = Convert.ToBoolean(args.Value);
+    //     if (_userGroups[group])
+    //         Model.GroupIds.Add(group.Id);
+    //     else
+    //         Model.GroupIds.Remove(group.Id);
+    // }
+}

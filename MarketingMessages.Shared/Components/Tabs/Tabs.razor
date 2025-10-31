@@ -1,0 +1,49 @@
+﻿@rendermode @(new InteractiveWebAssemblyRenderMode(false))
+@attribute [StreamRendering]
+
+<CascadingValue Value="this">
+    <div class="tabs @TabsClass">
+        @TabCollection
+    </div>
+    <div class="tab-pane-container @PanelsClass">
+        @TabPanels
+    </div>
+</CascadingValue>
+
+@code {
+    [Parameter]
+    public string? TabsClass { get; set; }
+
+    [Parameter]
+    public string? PanelsClass { get; set; }
+
+    public event EventHandler<string>? OnTabSwitched;
+
+    [Parameter]
+    public RenderFragment? TabCollection { get; set; }
+
+    [Parameter]
+    public RenderFragment? TabPanels { get; set; }
+
+    [Parameter]
+    public string ActiveTab { get; set; } = "";
+
+    [Parameter]
+    public EventCallback<string> ActiveTabChanged { get; set; }
+
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (!String.IsNullOrEmpty(ActiveTab))
+        {
+            OnTabSwitched?.Invoke(this, ActiveTab);
+        }
+        base.OnAfterRender(firstRender);
+    }
+
+    public void TabClicked(string name)
+    {
+        ActiveTab = name;
+        OnTabSwitched?.Invoke(this, name);
+    }
+}

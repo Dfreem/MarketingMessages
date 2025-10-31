@@ -1,0 +1,134 @@
+﻿@inject IJSRuntime _js
+@inject NavigationManager _nav
+
+<div class="modal" id="@Id">
+
+    <div class="modal-dialog @Class">
+        <div class="modal-content">
+            @if (ModalHeader != null)
+            {
+                <div class="modal-header @HeaderClass">
+                    @ModalHeader
+                </div>
+            }
+            <div class="modal-body @BodyClass">
+                @if (ModalTitle is not null)
+                {
+                    <div class="modal-title">
+                        @ModalTitle
+                    </div>
+                }
+                @ModalBody
+            </div>
+            @if (ModalFooter is not null)
+            {
+                <div class="modal-footer @FooterClass">
+                    @ModalFooter
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@code {
+
+    [Parameter]
+    public string Id { get; set; } = Guid.NewGuid().ToString();
+
+    [Parameter]
+    public bool Visible { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> VisibleChanged { get; set; }
+
+    [Parameter]
+    public RenderFragment? ModalBody { get; set; }
+
+    [Parameter]
+    public RenderFragment? ModalHeader { get; set; }
+
+    [Parameter]
+    public RenderFragment? ModalFooter { get; set; }
+
+    [Parameter]
+    public RenderFragment? ModalTitle { get; set; }
+
+    [Parameter]
+    public string? Class { get; set; }
+
+    [Parameter]
+    public string? BodyClass { get; set; }
+
+    [Parameter]
+    public string? HeaderClass { get; set; }
+
+    [Parameter]
+    public string? FooterClass { get; set; }
+
+    [Parameter]
+    public EventCallback OnShown { get; set; }
+
+    [Parameter]
+    public EventCallback OnHidden { get; set; }
+
+    DotNetObjectReference<Modal>? _selfRef;
+
+    private IJSObjectReference? _module;
+
+    [Parameter]
+    public BackdropOptions Backdrop { get; set; } = BackdropOptions.True;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _selfRef = DotNetObjectReference.Create(this);
+            _module = await _js.InvokeAsync<IJSObjectReference>("import", "./_content/MarketingMessages.Shared/js/modal.js");
+            await _module.InvokeVoidAsync("registerModalEvents", Id, _selfRef, nameof(ShownCallback), nameof(HiddenCallback));
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    public async Task Hide()
+    {
+        if (!Visible) return;
+        if (_module is null)
+        {
+            Console.WriteLine("Attempted to hide modal before js module was initialized.");
+            return;
+        }
+        await _module.InvokeVoidAsync("hideModal", Id);
+    }
+
+    public async Task Show()
+    {
+        if (Visible) return;
+        if (_module is null)
+        {
+            Console.WriteLine("Attempted to show modal before js module was initialized.");
+            return;
+        }
+        await _module.InvokeVoidAsync("showModal", Id);
+    }
+
+    [JSInvokable]
+    public async Task HiddenCallback()
+    {
+        Visible = false;
+        await VisibleChanged.InvokeAsync(Visible);
+        await OnHidden.InvokeAsync();
+    }
+    [JSInvokable]
+    public async Task ShownCallback()
+    {
+        Visible = true;
+        await VisibleChanged.InvokeAsync(Visible);
+        await OnShown.InvokeAsync();
+    }
+    public enum BackdropOptions
+    {
+        True,
+        False,
+        Static
+    }
+}

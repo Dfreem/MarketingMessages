@@ -1,0 +1,25 @@
+﻿@using MarketingMessages.Shared.Components.Toast.Models
+@inherits LayoutComponentBase
+
+
+<AuthorizeView>
+    <Authorized>
+
+        <Loading />
+        @if (RendererInfo.IsInteractive)
+        {
+            <Toast Position="ToastPosition.Right" />
+            <Topbar />
+        }
+        <div class="d-flex w-100 px-0 mx-0">
+            <SideMenu />
+            <div class="col-md-10">
+                @Body
+            </div>
+        </div>
+    </Authorized>
+    <NotAuthorized>
+        @Body
+    </NotAuthorized>
+</AuthorizeView>
+

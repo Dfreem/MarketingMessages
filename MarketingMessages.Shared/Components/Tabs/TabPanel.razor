@@ -1,0 +1,56 @@
+﻿@using MarketingMessages.Shared.Components.Tabs
+@implements ITabPane
+
+@if (Visible && ChildContent is not null)
+{
+    <div role="tabpanel" class="tab-pane">
+        @ChildContent
+    </div>
+}
+
+
+@code {
+    [Parameter, EditorRequired]
+    public required string Name { get; set; }
+
+    public bool Visible { get; set; }
+
+    [Parameter]
+    public RenderFragment? ChildContent { get; set; }
+
+    [CascadingParameter]
+    public Tabs? TabManager { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (TabManager != null)
+        {
+
+            if (TabManager != null)
+            {
+                TabManager.OnTabSwitched += async (_, name) =>
+                    {
+                        if (name != Name)
+                            await Hide();
+                        else
+                            await Show();
+
+                    };
+            }
+            base.OnInitialized();
+        }
+        await base.OnInitializedAsync();
+    }
+
+    public async Task Show()
+    {
+        Visible = true;
+        await InvokeAsync(StateHasChanged);
+    }
+    public async Task Hide()
+    {
+        Visible = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+}

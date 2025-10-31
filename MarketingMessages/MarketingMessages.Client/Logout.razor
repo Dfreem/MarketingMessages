@@ -1,0 +1,12 @@
+﻿@page "/logout"
+@inject NavigationManager _nav
+
+
+@code {
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+        _nav.NavigateTo("Account/Logout", forceLoad: true);
+    }
+}

@@ -1,0 +1,27 @@
+﻿.btn {
+    font-family: "Reddit Sans", sans-serif;
+    user-select: none;
+}
+
+.icon-link {
+    & > .bi {
+        height: auto;
+        width: auto;
+    }
+
+//    &-hover:hover > i {
+//        transform: translateX(.5rem);
+//    }
+}
+
+a:any-link, .link {
+    user-select: none;
+}
+
+a:hover {
+    cursor: pointer;
+}
+
+//.btn-secondary, .btn-primary {
+//    color: white;
+//}

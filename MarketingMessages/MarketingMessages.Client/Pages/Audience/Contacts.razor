@@ -1,0 +1,291 @@
+﻿@page "/audience/contacts"
+@using MarketingMessages.Client.Services.HttpService
+@using MarketingMessages.Shared.DTO.V1
+@using Microsoft.AspNetCore.Components.WebAssembly.Http
+
+@inject IHTTPService _http
+@inject ILogger<Index> _logger
+@inject IToastService _toast
+@inject AudienceService _audienceService
+@inject IJSRuntime _js
+
+<PageTitle>Audience</PageTitle>
+<div class="d-flex ms-5 mt-4">
+    <h3 class="text-600 ">Audience</h3>
+</div>
+<hr />
+
+<div class="">
+    <Card Class="ms-4 border-0" BodyClass="px-4">
+        <CardBody>
+            <div class="d-flex bg-200 border border-300 justify-content-between">
+                <div class="m-2">
+                    <span class="fw-medium"> Total Contacts </span><span class="mx-3 ">@_totalContacts</span>
+                </div>
+                <div class="m-2 ms-auto me-3">
+                    <button class="btn btn-danger" @onclick="DeleteAllContacts">
+                        Delete all contacts
+                    </button>
+                </div>
+            </div>
+        </CardBody>
+    </Card>
+</div>
+
+
+<div class="">
+    <div class="w-100">
+        <Card Class="ms-4 border-0" BodyClass="px-4">
+            <CardTitle>
+                <h4 class="mb-1 ">
+                    Get connected to your audience!
+                </h4>
+            </CardTitle>
+            <CardBody>
+                <p class="small">
+                    Contacts are the people that make up your audience. We can easily import your mailing list from a CSV file.
+                </p>
+                <div class="vs-2 d-flex align-items-end">
+                    @if (_loadingFile)
+                    {
+                        <div class="spinner-border spinner-border-grow"></div>
+                    }
+                    else
+                    {
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#contact-upload-modal">
+                            Import Contacts
+                        </button>
+                    }
+                </div>
+
+            </CardBody>
+        </Card>
+    </div>
+</div>
+<Modal BodyClass="px-3" Class="max-w-30" @ref='_uploadModal' Id="contact-upload-modal">
+    <ModalBody>
+        @if (_uploadContext is not null)
+        {
+            <EditForm style="display: contents;" EditContext="_uploadContext" OnValidSubmit="SaveUploadAsync" FormName="upload-form">
+                <div class="d-flex w-100 mb-3">
+                    <h3>Upload Contacts</h3>
+                </div>
+                <div class="d-flex flex-column vs-15 w-100">
+                    <div class="d-flex mt-auto mb-auto">
+                        <div class="col">
+                            <p class="fs-14 col-11">
+                                Upload a file containing a contact list, then choose the field names that your contact list's columns correspond to.<br />
+                                Click save to finish uploading your contact list.
+                            </p>
+
+                        </div>
+                    </div>
+                    <div class="d-flex mb-3">
+
+                        <div class="col align-content-end">
+                            <div class="d-flex w-100">
+                                <div class="col-8 px-2">
+
+                                    <InputFile class="form-control" OnChange="FileSelected" />
+                                    <ValidationMessage For="() => Csv.CsvHeader" />
+                                </div>
+                                <div class="col-auto px-2">
+                                    <button class="btn btn-secondary" data-bs-dismiss="modal" @onclick="(() => Csv = new())">Cancel</button>
+                                </div>
+                                <div class="col-auto px-2">
+                                    @if (_loadingFile)
+                                    {
+                                        <Loading />
+                                    }
+                                    else
+                                    {
+                                        if (String.IsNullOrEmpty(Csv.ListName) || Csv.CsvHeader.Length == 0)
+                                        {
+                                            <button disabled type="submit" role="button" class="btn btn-primary w-100">
+                                                Save
+                                            </button>
+
+                                        }
+                                        else
+                                        {
+
+                                            <button type="submit" role="button" class="btn btn-primary w-100">
+                                                Save
+                                            </button>
+                                        }
+                                    }
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="d-flex flex-wrap w-100">
+                    @if (_fileUploaded && Csv.FieldMap.Any(m => m.Value == CsvFields.None))
+                    {
+                        @foreach (var item in Csv.FieldMap.Where(v => v.Value == CsvFields.None))
+                        {
+                            <div class="col">
+                                <label class="col-form-label"> @item.Key </label>
+                                <select @key="@item.Key"
+                                        role="button"
+                                        class="link link-primary"
+                                        @onchange='((args) => MapFieldHeader(args, item.Key))'>
+                                    <option value="@CsvFields.None" class="link">Field Name</option>
+                                    @foreach (var fieldname in Enum.GetValues<CsvFields>())
+                                    {
+                                        if (Csv.FieldMap[item.Key] == fieldname)
+                                        {
+                                            <option selected="selected" value="@fieldname">@fieldname.ToString()</option>
+                                        }
+                                        else
+                                        {
+                                            <option value="@fieldname">@fieldname.ToString()</option>
+                                        }
+                                    }
+                                </select>
+                            </div>
+                        }
+                    }
+                </div>
+
+            </EditForm>
+        }
+
+    </ModalBody>
+</Modal>
+
+@code {
+
+    public CsvContactsUpload Csv { get; set; } = new();
+
+    private AudienceFormModel _newAudience = new();
+
+    private int _totalContacts;
+
+    EditContext? _uploadContext;
+    ValidationMessageStore? _uploadValidation;
+    Modal _uploadModal = new();
+
+    private bool _initialized;
+    private bool _loadingFile;
+    private bool _fileUploaded;
+    private bool _fileCanSave;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _uploadContext = new(Csv);
+        _uploadValidation = new(_uploadContext);
+        _uploadContext.OnValidationRequested += HandleUploadValidation;
+        _totalContacts = await _audienceService.GetUserTotalContacts();
+        _initialized = true;
+        await base.OnInitializedAsync();
+    }
+
+    private void HandleUploadValidation(Object? sender, ValidationRequestedEventArgs args)
+    {
+        _uploadValidation?.Clear();
+        if (String.IsNullOrEmpty(Csv.ListName))
+            _uploadValidation?.Add(() => Csv.ListName, "Please enter a name to for your new list.");
+
+        if (Csv.FieldMap.All(m => m.Value == CsvFields.None) || !Csv.FieldMap.Any(m => m.Value == CsvFields.FirstName) || !Csv.FieldMap.Any(m => m.Value == CsvFields.LastName) || !Csv.FieldMap.Any(m => m.Value == CsvFields.Email))
+            _uploadValidation?.Add(() => Csv.FieldMap, "Contact list file requires atleast the following fields, First Name, Last Name and Email");
+
+        if (Csv.CsvHeader.Length == 0)
+            _uploadValidation?.Add(() => Csv.CsvHeader, "Please select a file to upload.");
+
+    }
+
+    private void MapFieldHeader(ChangeEventArgs args, string key)
+    {
+        var fieldValue = Enum.Parse<CsvFields>(args.Value?.ToString() ?? "None");
+        Csv.FieldMap[key] = fieldValue;
+    }
+
+
+    public async Task FileSelected(InputFileChangeEventArgs args)
+    {
+        _fileUploaded = false;
+        _loadingFile = true;
+        await InvokeAsync(StateHasChanged);
+        // Csv.ListName = args.File.Name;
+        // Csv.FieldMap = [];
+        var uploadResponse = await _http.UploadContactFileAsync(args.File);
+        if (uploadResponse.Success)
+        {
+            Csv = uploadResponse.Data!;
+        }
+        else
+        {
+            _logger.LogError("{error}", uploadResponse.Error);
+            _toast.Error(uploadResponse.Error ?? "Unable to upload contacts. If the problem continues, please contact support.");
+        }
+        _loadingFile = false;
+        _fileUploaded = true;
+        await InvokeAsync(StateHasChanged);
+        // await foreach (var row in reader.GetRecordsAsync<string[]>())
+        // {
+        //     Csv.CsvRows = Csv.CsvRows.Append(row).ToArray();
+        // }
+    }
+
+    private async Task SaveUploadAsync(EditContext ctx)
+    {
+        _loadingFile = true;
+        await InvokeAsync(StateHasChanged);
+        var uploadResponse = await _http.SaveContactUploadAsync(Csv);
+
+        if (uploadResponse.Success)
+        {
+            await _uploadModal.Hide();
+            if (uploadResponse.Data?.DuplicateEmails.Count != 0)
+            {
+                if (uploadResponse.Data?.TotalUploaded != 0)
+                {
+                    _toast.Warning($"{uploadResponse.Data!.TotalUploaded} contacts were saved and {uploadResponse.Data!.DuplicateEmails.Count} are already in your list of contacts");
+                }
+                else
+                {
+                    _toast.Error($"Unable to upload contacts. {uploadResponse.Data.DuplicateEmails.Count} emails are already in your contacts.");
+                }
+            }
+            else
+            {
+                _toast.Success("Successfully uploaded contact list");
+            }
+            Csv = new();
+            _uploadContext = new(Csv);
+            _uploadValidation = new(_uploadContext);
+            _totalContacts = await _audienceService.GetUserTotalContacts();
+        }
+        else
+        {
+            _toast.Error(uploadResponse.Error ?? "Unable to save contacts. If the problem continues, please contact support.");
+        }
+        _loadingFile = false;
+        await InvokeAsync(StateHasChanged);
+
+    }
+    private void SelectAllOrAny(ChangeEventArgs args)
+    {
+        if (Enum.TryParse<ConditionalInclusion>(args.Value?.ToString(), out var condition))
+        {
+            _newAudience.AnyOrAll = condition;
+        }
+    }
+    private async Task DeleteAllContacts(MouseEventArgs args)
+    {
+        var shouldDelete = await _js.InvokeAsync<bool>("confirm", "Are you sure you want to delete ALL of your contacts?");
+        if (shouldDelete)
+        {
+            var response = await _audienceService.DeletAllContactsAsync();
+            if (response.Success)
+            {
+                _toast.Success("Deleted all contacts.");
+                _totalContacts = 0;
+            }
+        }
+    }
+}

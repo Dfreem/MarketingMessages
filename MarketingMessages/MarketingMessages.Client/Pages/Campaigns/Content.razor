@@ -1,0 +1,38 @@
+﻿@page "/campaigns/content/{contentId}"
+@inject IHTTPService _http
+@inject ContentService _contentService
+
+<PageTitle>Campaign Content</PageTitle>
+
+<div class="d-flex ms-5 mt-3">
+    <h3 class="text-600 ">Campaigns</h3>
+</div>
+<hr />
+
+<div class="container-fluid h-90 pb-5 overflow-y-auto overflow-x-hidden">
+    <NavLink href="/campaigns" class="link ms-5"><i class="bi bi-chevron-left"></i> All Campaigns</NavLink>
+    <Card Class="mx-auto">
+        <CardTitle>
+            @_content?.Subject
+        </CardTitle>
+        <CardBody>
+            @((MarkupString)(_content?.HtmlContent ?? ""))
+            @* @_campaign?.Content?.HtmlContent *@
+        </CardBody>
+    </Card>
+</div>
+
+@code {
+    [Parameter]
+    public string? ContentId { get; set; }
+
+    EmailContentResponse? _content;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var cid = Convert.ToInt32(ContentId);
+        _content = await _contentService.GetContentByIdAsync(cid);
+
+        await base.OnInitializedAsync();
+    }
+}

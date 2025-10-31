@@ -1,0 +1,10 @@
+﻿body {
+    min-width: 100%;
+    max-width: 100%;
+}
+
+html {
+    @media(max-width: map-get($grid-breakpoints, 'md')) {
+        width: fit-content;
+    }
+}

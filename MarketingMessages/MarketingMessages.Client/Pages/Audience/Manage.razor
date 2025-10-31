@@ -1,0 +1,133 @@
+﻿@page "/audience/manage"
+@using MarketingMessages.Client.Services.HttpService
+@using MarketingMessages.Client.Services.HttpService
+@using MarketingMessages.Shared.Components.Toast
+@using MarketingMessages.Shared.Components.Tooltip
+@using MarketingMessages.Shared.DTO.V1
+@using MarketingMessages.Shared.Models
+@using MarketingMessages.Shared.Services.ToastService
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using Microsoft.EntityFrameworkCore
+@inject ILogger<Manage> _logger
+@inject IToastService _toast
+@inject IHTTPService _http
+@inject IJSRuntime _js
+
+<PageTitle>Manage Audience</PageTitle>
+
+<div class="d-flex ms-5 mt-4">
+    <h3 class="text-600 ">Audience</h3>
+</div>
+<hr />
+
+<div class="container-fluid mt-5">
+    <div class="d-flex px-5 max-h-45 overflow-y-auto mt-auto w-100 h-100">
+        <QuickGrid @ref="_segmentGrid" Class="table table-borderless" Items="_segments">
+            <TemplateColumn Context="audience">
+                <div class="container-fluid mt-2">
+                    @if (_editingNameId == audience.Audience.Id)
+                    {
+                        <EditForm Model="audience" OnValidSubmit="(() => UpdateAudienceName(audience.Audience.Name))">
+                            <div class="d-flex w-100">
+                                <div class="col-auto">
+                                    <input class="form-control" @bind="audience.Audience.Name" />
+
+                                </div>
+                                <div class="col-auto">
+                                    <button class="btn btn-success ms-3" role="button" type="submit">
+                                        <i class="bi bi-check fs-14"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </EditForm>
+                    }
+                    else
+                    {
+                        <h4 class="d-flex align-items-center">
+                            @audience.Audience.Name
+                            <a class="link ms-3" role="button" @onclick="(() => SetEditingName(audience))">
+                                <i class="bi bi-pencil fs-14"></i>
+                            </a>
+                        </h4>
+                    }
+                    <div class="text-nowrap flex-nowrap ps-2 mt-auto">
+                        <label class="col-form-label fw-bolder text-700">Created On</label> @audience.Audience.CreatedOn.ToString("MMM dd yyyy")
+                    </div>
+                    @if (audience.UnsubscribeGroup != null)
+                    {
+                        <div class="d-flex ps-2 align-items-baseline">
+                            <label class="col-form-label fw-bolder text-700 me-3">Unsubscribe Group </label> @audience.UnsubscribeGroup.Name
+                        </div>
+                    }
+                </div>
+            </TemplateColumn>
+            <TemplateColumn Context="audience">
+                <div class="d-flex mt-2 w-100 align-items-baseline">
+                    <label class="col-form-label fw-bolder fs-14 text-700 me-3">Total Contacts:</label> @audience.ContactCount
+                    <a class="link link-danger ms-auto me-3" @onclick="(async () => await DeleteSegment(audience.Audience.Id))">
+                        <i class="bi bi-trash fs-14"></i>
+                    </a>
+                </div>
+                <NavLink class="link" href="#">View Analytics</NavLink>
+            </TemplateColumn>
+        </QuickGrid>
+
+    </div>
+</div>
+
+@code {
+    private List<int> _segmentDeletes = [];
+    private QuickGrid<AudienceSegment> _segmentGrid = new();
+    private IQueryable<AudienceSegment> _segments = new List<AudienceSegment>().AsQueryable();
+    private PaginationState _segmentsPagination = new() { ItemsPerPage = 100 };
+    private int _editingNameId;
+    private string _editingName = "";
+
+    public List<Contact> Contacts { get; set; } = [];
+
+    protected override async Task OnInitializedAsync()
+    {
+        var segments = await _http.GetUserAudiencesAsync();
+        _segments = segments.AsQueryable();
+        await InvokeAsync(StateHasChanged);
+        await base.OnInitializedAsync();
+    }
+
+    private async Task DeleteSegment(int segmentId)
+    {
+        var segment = _segments.FirstOrDefault(s => s.Audience.Id == segmentId);
+        bool shouldDelete = await _js.InvokeAsync<bool>("confirm", $"Are you sure you want to delete the {segment?.Audience.Name}");
+        if (!shouldDelete) return;
+        var response = await _http.DeleteAudienceAsync(segmentId);
+        if (response.Success && segment is not null)
+        {
+            var segments = _segments.ToList();
+            segments.Remove(segment);
+            _segments = segments.AsQueryable();
+            _toast.Success($"Successfully deleted audience {segment.Audience.Name}");
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+    private async Task UpdateAudienceName(string name)
+    {
+        var args = _segments.FirstOrDefault(s => s.Audience.Id == _editingNameId);
+        _editingNameId = 0;
+        if (args.Audience.Name == name) return;
+        var response = await _http.UpdateAudienceAsync(args.Audience);
+        if (response.Success)
+        {
+            args.Audience = response.Data ?? args.Audience;
+            _toast.Success($"Successfully updated audience name to {args.Audience.Name}");
+        }
+        else
+        {
+            _toast.Error($"Failed to update audience name: {response.Error}");
+        }
+    }
+
+    private void SetEditingName(AudienceSegment campaign)
+    {
+        _editingNameId = campaign.Audience.Id;
+        _editingName = campaign.Audience.Name;
+    }
+}

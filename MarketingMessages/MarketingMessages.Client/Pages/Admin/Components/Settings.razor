@@ -1,0 +1,68 @@
+﻿@page "/admin/settings"
+@using MarketingMessages.Shared.Models
+
+@inject HttpClient _http
+@inject IToastService _toast
+@inject ILogger<Settings> _logger
+
+
+<EditForm OnSubmit="SubmitSettings" Model="_applicationSettings">
+    <div class="container">
+    <div class="row">
+        <div class="col-auto">
+            <button type="submit" role="button" class="btn btn-primary">
+                Save
+            </button>
+        </div>
+    </div>
+        <div class="row">
+            <div class="col-lg-6 col-auto">
+                <div class="d-flex">
+
+                    @foreach (var setting in _applicationSettings)
+                    {
+                        var set = setting;
+
+                        <label class="col-form-label me-3">
+                            @setting.SettingName
+                        </label>
+                        <div class="col-auto">
+                            <InputText class="form-control" @bind-Value="@set.SettingValue" @key="@set.SettingName" />
+
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</EditForm>
+
+
+
+@code {
+    List<ApplicationSetting> _applicationSettings = [];
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _applicationSettings = await _http.GetAdminSettingsAsync();
+            await InvokeAsync(StateHasChanged);
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+    private async Task SubmitSettings(EditContext args)
+    {
+        var saveResponse = await _http.UpdateAdminSettingsAsync(_applicationSettings);
+        if(saveResponse.Success)
+        {
+            _toast.Success("Successfully saved changes.");
+            _applicationSettings = saveResponse.Data??[];
+        }
+        else
+        {
+            _logger.LogError(saveResponse.Error);
+            _toast.Error("An error occurred. Logs are written to ApplicationLogs table.");
+        }
+    }
+}

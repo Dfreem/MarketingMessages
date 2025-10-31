@@ -1,0 +1,39 @@
+﻿<div class="card @Class">
+    @if (CardHeader is not null)
+    {
+        <div class="card-header @HeaderClass">
+            @CardHeader
+        </div>
+    }
+    <div class="card-body @BodyClass">
+        @if (CardTitle is not null)
+        {
+            <div class="card-title">
+                @CardTitle
+            </div>
+        }
+        @CardBody
+    </div>
+    @if (CardFooter is not null)
+    {
+        @CardFooter
+    }
+</div>
+
+@code {
+    [Parameter]
+    public RenderFragment? CardHeader { get; set; }
+    [Parameter]
+    public RenderFragment? CardFooter { get; set; }
+    [Parameter]
+    public required RenderFragment CardBody { get; set; }
+    [Parameter]
+    public RenderFragment? CardTitle { get; set; }
+    [Parameter]
+    public string? Class { get; set; }
+    [Parameter]
+    public string? BodyClass { get; set; }
+    [Parameter]
+    public string? HeaderClass { get; set; }
+
+}

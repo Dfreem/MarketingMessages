@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+This file is used by the publish/package process of your Web project. You can customize the behavior of this process
+by editing this MSBuild file. In order to learn more about this please visit https://go.microsoft.com/fwlink/?LinkID=208121. 
+-->
+<Project>
+  <PropertyGroup>
+    <TimeStampOfAssociatedLegacyPublishXmlFile />
+    <EncryptedPassword>AQAAANCMnd8BFdERjHoAwE/Cl+sBAAAAN2pvdH2DX0WbIU6ZxhPsDgAAAAACAAAAAAAQZgAAAAEAACAAAADOsIIRe6xgLCRZDJWsXKUMHc4w8AC5O0JcQQ7rZ01DzQAAAAAOgAAAAAIAACAAAABqWRt4nY4uvDSTzD27oXsuNqhw7bkuCAoh4T1k6nADKyAAAACHwyi6SWlG3ujT8wmXUPo3eqMloDUrdYnURg7At6RC1kAAAABty9+yElz+N3g2mgEpwuCchtuhZW8DecntoE8UYKFLKJqLeT7h1c9RM2GOnS8DhiPUAVlot/be0M5/CyfTEp1b</EncryptedPassword>
+    <History>True|2025-09-12T00:35:02.6125305Z||;True|2025-09-11T16:32:09.6749283-07:00||;False|2025-09-10T16:01:28.3803118-07:00||;True|2025-09-10T15:54:06.3490892-07:00||;True|2025-09-10T15:03:26.8182597-07:00||;True|2025-09-10T13:21:01.5647516-07:00||;True|2025-09-09T20:25:25.8107857-07:00||;True|2025-09-09T18:42:11.8248890-07:00||;True|2025-09-08T20:58:02.0419632-07:00||;True|2025-09-08T20:41:49.4084542-07:00||;True|2025-09-07T19:02:37.7065164-07:00||;True|2025-09-07T18:42:16.6648156-07:00||;True|2025-09-07T13:35:42.7838102-07:00||;True|2025-09-07T13:28:51.9884962-07:00||;True|2025-09-07T10:20:05.8032823-07:00||;True|2025-09-07T09:58:45.9313833-07:00||;True|2025-09-07T09:35:08.6185046-07:00||;True|2025-09-06T20:30:15.2964211-07:00||;True|2025-09-06T19:52:47.8144907-07:00||;True|2025-09-06T17:11:07.6637814-07:00||;True|2025-09-06T16:44:06.1773001-07:00||;True|2025-09-06T16:26:12.4580126-07:00||;True|2025-09-06T15:46:09.7299733-07:00||;True|2025-09-06T10:16:52.7498193-07:00||;True|2025-09-05T18:41:44.2684240-07:00||;True|2025-09-05T18:35:31.3802023-07:00||;True|2025-09-05T18:20:42.8354061-07:00||;True|2025-09-04T19:07:35.3581280-07:00||;False|2025-09-04T19:05:01.7774448-07:00||;True|2025-09-04T17:25:36.6537361-07:00||;True|2025-09-04T17:15:13.5360117-07:00||;True|2025-09-03T20:52:03.1086468-07:00||;True|2025-09-03T20:42:33.0451771-07:00||;True|2025-09-03T20:14:40.0090252-07:00||;True|2025-09-03T17:49:16.6511033-07:00||;True|2025-09-01T18:47:14.4492669-07:00||;True|2025-08-27T18:26:31.8313116-07:00||;True|2025-08-27T18:25:18.0344074-07:00||;True|2025-08-27T18:16:00.3813470-07:00||;True|2025-08-26T20:40:59.7458250-07:00||;True|2025-08-26T20:25:45.1097435-07:00||;True|2025-08-26T20:08:38.0598283-07:00||;True|2025-08-26T17:35:19.3066503-07:00||;True|2025-08-22T20:14:48.8225894-07:00||;True|2025-08-21T16:26:20.1594699-07:00||;True|2025-08-21T07:27:04.3091164-07:00||;True|2025-08-19T21:49:14.3877399-07:00||;True|2025-08-16T14:53:11.3000168-07:00||;True|2025-08-16T14:44:47.2315491-07:00||;True|2025-08-16T14:41:37.9595821-07:00||;True|2025-08-08T16:10:19.7296445-07:00||;True|2025-08-07T20:58:57.7522055-07:00||;True|2025-08-06T19:50:31.4582317-07:00||;True|2025-08-06T18:55:38.7679714-07:00||;True|2025-08-04T20:13:56.9323864-07:00||;True|2025-08-04T20:08:56.5401962-07:00||;True|2025-08-04T19:39:34.1149208-07:00||;True|2025-08-03T21:44:09.9827037-07:00||;True|2025-08-03T21:29:19.7276414-07:00||;True|2025-08-03T21:25:15.5638314-07:00||;True|2025-08-03T15:09:04.0110840-07:00||;True|2025-08-03T12:44:42.6627530-07:00||;True|2025-08-03T11:15:17.0424282-07:00||;True|2025-08-03T11:12:47.3095097-07:00||;True|2025-08-03T10:14:41.5105504-07:00||;True|2025-08-03T09:52:38.6830144-07:00||;False|2025-08-03T09:51:46.6051650-07:00||;True|2025-08-03T09:26:36.7078679-07:00||;True|2025-08-03T08:47:31.0563750-07:00||;True|2025-07-31T21:06:30.2130178-07:00||;</History>
+    <LastFailureDetails />
+  </PropertyGroup>
+  <ItemGroup>
+    <DestinationConnectionStrings Include="DefaultConnection">
+      <Value>Server=db24792.databaseasp.net%3b Database=db24792%3b User Id=db24792%3b Password=sQ!56#nBoT%402%3b Encrypt=False%3b MultipleActiveResultSets=True%3b</Value>
+    </DestinationConnectionStrings>
+    <DestinationConnectionStrings Include="SendGridApi:ApiKey">
+      <Value>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</Value>
+    </DestinationConnectionStrings>
+    <DestinationConnectionStrings Include="SendGridApi:FromEmail">
+      <Value>devin%40localfoodmarketplace.com</Value>
+    </DestinationConnectionStrings>
+    <DestinationConnectionStrings Include="SendGridApi:SandboxMode">
+      <Value>False</Value>
+    </DestinationConnectionStrings>
+    <DestinationConnectionStrings Include="SendGridSMTP:Password">
+      <Value>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</Value>
+    </DestinationConnectionStrings>
+    <DestinationConnectionStrings Include="SendGridSMTP:Port">
+      <Value>587</Value>
+    </DestinationConnectionStrings>
+    <DestinationConnectionStrings Include="SendGridSMTP:Server">
+      <Value>smtp.sendgrid.net</Value>
+    </DestinationConnectionStrings>
+    <DestinationConnectionStrings Include="SendGridSMTP:Username">
+      <Value>apiKey </Value>
+    </DestinationConnectionStrings>
+    <DestinationConnectionStrings Include="TrunkMonkeyConnection">
+      <Value>Server=db24793.databaseasp.net%3b Database=db24793%3b User Id=db24793%3b Password=sB_28aC+d!5E%3b Encrypt=False%3b MultipleActiveResultSets=True%3b</Value>
+    </DestinationConnectionStrings>
+  </ItemGroup>
+</Project>

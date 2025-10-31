@@ -1,0 +1,45 @@
+﻿
+@use 'sass:color';
+
+@import "../../lib/bootstrap/scss/_functions.scss";
+
+.tab {
+    border: none;
+    background-color: #{$tab-bg};
+    border-inline: 2px ridge #{$gray-400};
+    border-top: 2px ridge #{$gray-400};
+    border-top-left-radius: 5px;
+    border-top-right-radius: 5px;
+    height: 1.5rem;
+    line-height: 1rem;
+    margin-inline-end: 1px;
+}
+
+    .tab:hover {
+        background-color: color.adjust($tab-bg, $lightness: 5%);
+    }
+
+button.tab.active {
+    background-color: color.adjust($tab-bg, $lightness: 10%) !important;
+    border-color: #{$tab-border-color}!important;
+    color:  color.adjust($primary, $lightness: -15%);
+    font-weight: bolder;
+}
+
+.tabs {
+    display: flex;
+    width: 100%;
+    flex-wrap: nowrap;
+    margin-inline: 0;
+    padding-inline: .5rem;
+    border-bottom: 2px ridge #{$tab-border-color};
+    // d-flex w-100 flex-nowrap
+}
+
+
+.tab-pane-container {
+    padding-top: 1rem;
+    padding-inline: 1em;
+    scroll-padding-block: 2rem;
+}
+

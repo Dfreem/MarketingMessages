@@ -1,0 +1,69 @@
+﻿@using MarketingMessages.Shared.Components.Toast.Models
+@using MarketingMessages.Shared.Services.ToastService
+@using Timer = System.Timers.Timer
+@using MarketingMessages.Shared.Components.Toast.Models
+@using MarketingMessages.Shared.Services.ToastService
+
+@inject IToastService _toast
+
+
+<div class="@ToastClass @PositionClass toastr">
+    <div class="toastr-header">
+        <a class="btn btn-link ms-auto close p-0" aria-label="Close" @onclick='OffToast'><i class="bi bi-x fs-3 p-0"></i></a>
+    </div>
+    <div class="toastr-body text-center pb-1">
+        @ToastMessage
+        
+    </div>
+</div>
+
+@code {
+    public string ToastMessage { get; set; } = "Thank You!";
+
+    public string ToastClass { get; set; } = "toast-default";
+
+    [Parameter]
+    public ToastPosition Position { get; set; } = ToastPosition.Top | ToastPosition.Right;
+
+    public string PositionClass { get; set; } = "";
+
+    Timer _timer = default!;
+
+    // protected override void OnParametersSet()
+    // {
+    //     StateHasChanged();
+    //     base.OnParametersSet();
+    // }
+
+    public void OnToast(Object? sender, ToastEventArgs args)
+    {
+        PositionClass = args.Position.ToString().Replace(",", "").ToLower();
+        _timer = new();
+        _timer.Interval = args.Duration??3000;
+        ToastClass = args.CssClass;
+        ToastMessage = args.Message;
+        _ = InvokeAsync(StateHasChanged);
+        _timer.Elapsed += async (Object? sender, System.Timers.ElapsedEventArgs args) =>
+        {
+            _timer.Stop();
+            await OffToast();
+        };
+        _timer.Start();
+    }
+
+    public async Task OffToast()
+    {
+        ToastClass = "toast-default";
+        await InvokeAsync(StateHasChanged);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _toast.ToastEvent += OnToast;
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+}

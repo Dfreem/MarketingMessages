@@ -1,0 +1,271 @@
+﻿@page "/audience"
+@using MarketingMessages.Client.Pages.Audience.Components
+@using MarketingMessages.Client.Services
+@using MarketingMessages.Client.Services.HttpService
+@using MarketingMessages.Shared.Services
+@inject IHTTPService _http
+@inject AudienceService _audienceService
+@inject UnsubscribeGroupService _unsubscribeGroupService
+@inject IToastService _toast
+
+<PageTitle>Audience</PageTitle>
+<div class="d-flex ms-5 mt-4">
+    <h3 class="text-600 ">Audience</h3>
+</div>
+<hr />
+<div class="container-fluid mt-5">
+    <div class="d-flex pb-5 mt-auto w-100">
+        <Card HeaderClass="py-1 bg-800 rounded-0" BodyClass="bg-white" Class="rounded-0 h-auto col-11 mx-auto  min-w-25">
+            <CardHeader>
+                <h4 class="reddit-sans-350 text-light ps-3 pt-1">
+                    Create Your Audience
+                </h4>
+            </CardHeader>
+            <CardBody>
+                <div class="d-flex flex-column">
+                    <div class="d-flex mt-3">
+                        <p class="mt-2 px-3">
+                            You can filter your contacts and save the results as an audience.
+                            Click the blue plus <i class="fa fa-plus-circle link link-primary"></i> symbol on the right to add more conditions.
+                        </p>
+                    </div>
+                    <div class="d-flex mt-3">
+                        <p class="mt-2 px-3">
+                            Select from one of your existing segments below to edit the criteria
+                        </p>
+                    </div>
+                    <div class="d-flex mb-3 w-100">
+
+                             <select @onchange="SelectExistingSegment" class="form-select">
+                                <option value="">Select</option>
+                                @foreach (var segment in _segments)
+                                {
+                                    if (_newAudience.SegmentId == segment.Audience.Id)
+                                    {
+                                        <option selected="selected" value="@segment.Audience.Id">@segment.Audience.Name</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@segment.Audience.Id">@segment.Audience.Name</option>
+                                    }
+                                }
+                            </select>
+                    </div>
+                    <div class="d-flex bg-200 border border-300 p-2 pt-2 rounded rounded-1">
+                        <div class="col">
+                            <div class="fw-medium">
+
+                                This audience will target
+                                <select @onchange="SelectAllOrAny" class="form-select fit-width d-inline mx-1 form-select-sm">
+                                    @if (_newAudience.AnyOrAll == ConditionalInclusion.All)
+                                    {
+                                        <option selected="selected" value="@ConditionalInclusion.All">All</option>
+                                        <option value="@ConditionalInclusion.Any">Any</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@ConditionalInclusion.All">All</option>
+                                        <option selected="selected" value="@ConditionalInclusion.Any">Any</option>
+                                    }
+                                </select>
+
+                                of the following conditions
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex w-100 align-items-end vs-3 mt-3">
+                    <div class="col-3">
+
+                        @if (_editName)
+                        {
+                            <div class="d-flex flex-nowrap">
+                                <InputText class="me-3 form-control w-100" @bind-Value="_newAudience.Title" />
+                                <button @onclick="(() => _editName = false)" role="button" class="btn btn-green-100 text-success">
+                                    <i class="fa fa-save"></i>
+                                </button>
+                            </div>
+
+                        }
+                        else
+                        {
+
+                            <div class="d-flex align-items-baseline ms-3 mt-4 text-nowrap">
+                                <h4 class="text-600  mb-0">@_newAudience.Title</h4>
+                                <a class="link link-primary ps-5 my-0" @onclick="(() => _editName = true)">Edit Name</a>
+                            </div>
+                        }
+                    </div>
+                    <div class="col-auto me-4 ms-auto">
+                        <a class="link" @onclick="AddRow">
+                            <i class="fa fa-plus-circle fs-16"></i>
+                        </a>
+                    </div>
+                </div>
+                <div class="d-flex flex-column">
+                    @for (int i = 0; i < _newAudience.Rows.Count; i++)
+                    {
+                        var row = _newAudience.Rows[i];
+                        <div class="d-flex flex-column">
+                            <div class="fw-bold fs-14">
+                                @if (_newAudience.Rows.Count > 0 && i > 0)
+                                {
+                                    @(_newAudience.AnyOrAll == ConditionalInclusion.All ? "And" : "Or")
+                                }
+                            </div>
+                            <AudienceFormRow Model="row" ModelChanged="UpdateModel" RemoveRow="((args) => _newAudience.Rows.Remove(args))" />
+                        </div>
+                    }
+                </div>
+                <div class="d-flex px-2">
+
+                    <div class="col-md ms-auto mb-3 me-5">
+                        <label class="form-label mb-3">Unsubscribe Group</label>
+                        <select @onchange="SetGroup" class="form-select">
+                            <option value="">Select</option>
+                            @foreach (var group in _userGroups)
+                            {
+                                <option data-bs-toggle="tooltip" data-bs-title="@group.Description" value="@group.Id">@group.Name</option>
+                            }
+                        </select>
+                    </div>
+                </div>
+                <div class="w-100">
+                    <div class="col-auto fw-medium fs-14 px-3 mb-3">
+                        Total Contacts in this Audience:
+
+                        @if (!_searching)
+                        {
+                            <span class="fw-bolder px-3">
+                                @_totalAudienceContacts
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="px-3">
+                                <div class="spinner-border spinner-grow text-500">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                            </span>
+                        }
+                    </div>
+                    @if (_newAudience.Rows.Count != 0)
+                    {
+                        <button class="btn btn-primary" @onclick="SaveAudience">
+                            Save Audience
+                        </button>
+                    }
+                </div>
+            </CardBody>
+        </Card>
+    </div>
+</div>
+
+
+@code {
+
+
+    private bool _initialized;
+    bool _editName;
+
+    private AudienceFormModel _newAudience = new() { Rows = [new()] };
+
+    private int _totalAudienceContacts;
+
+    private bool _searching;
+
+    private List<SuppressionGroupModel> _userGroups = [];
+
+    List<AudienceSegment> _segments = [];
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            _userGroups = await _unsubscribeGroupService.GetUserGroupsAsync();
+            _segments = await _http.GetUserAudiencesAsync();
+            await InvokeAsync(StateHasChanged);
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    private async Task SelectAllOrAny(ChangeEventArgs args)
+    {
+        if (args.Value is null)
+            _newAudience.AnyOrAll = ConditionalInclusion.All;
+        else
+            _newAudience.AnyOrAll = Enum.Parse<ConditionalInclusion>(args.Value.ToString()??"All");
+        await GetContactCountAsync();
+    }
+
+    private async Task GetContactCountAsync()
+    {
+        _searching = true;
+        await InvokeAsync(StateHasChanged);
+        _totalAudienceContacts = await _http.CountAudienceContactsAsync(_newAudience);
+        _searching = false;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task AddRow()
+    {
+        _newAudience.Rows.Add(new());
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private async Task SaveAudience()
+    {
+        var response = await _http.SaveAudienceAsync(_newAudience);
+        if (response.Success)
+        {
+            _toast.Success("Saved audience successfully.");
+            _newAudience = new();
+            await InvokeAsync(StateHasChanged);
+        }
+        else
+        {
+
+            _toast.Error($"Unable to save audience.");
+        }
+    }
+    private void SetGroup(ChangeEventArgs args)
+    {
+        int groupId = Convert.ToInt32(args.Value);
+        _newAudience.UnsubscribeGroup = _userGroups.FirstOrDefault(g => g.Id == groupId);
+    }
+    private async Task SelectExistingSegment(ChangeEventArgs args)
+    {
+        if (String.IsNullOrEmpty(args.Value?.ToString()))
+        {
+            _newAudience = new();
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+        int segmentId = Convert.ToInt32(args.Value);
+        var segment = _segments.FirstOrDefault(s => s.Audience.Id == segmentId);
+        var segmentResponse = await _audienceService.GetSegmentForEditing(segmentId);
+        if (segmentResponse is null)
+        {
+            _toast.Error("Something went wrong while getting audience to edit");
+            return;
+        }
+        _newAudience = segmentResponse;
+        await GetContactCountAsync();
+        await InvokeAsync(StateHasChanged);
+    }
+    private async Task UpdateModel(SegmentFormRow args)
+    {
+        var update = _newAudience.Rows.FirstOrDefault(r => r.Id == args.Id);
+        if (update is null)
+        {
+            _newAudience.Rows.Add(args);
+            await InvokeAsync(StateHasChanged);
+            return;
+        }
+        var index = _newAudience.Rows.IndexOf(update);
+        _newAudience.Rows.Remove(update);
+        _newAudience.Rows.Insert(index, args);
+        await GetContactCountAsync();
+    }
+}

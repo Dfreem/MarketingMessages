@@ -1,0 +1,288 @@
+﻿@using MarketingMessages.Shared.Components.Tooltip
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
+@inject ContentService _contentService
+@inject NavigationManager _nav
+@implements IAsyncDisposable
+
+<div class="editor-container @Class">
+    <div class="d-flex w-100 py-2 px-3">
+        <div class="col-4">
+            <label class="col-form-label">Content Name</label>
+            <input type="text" value="@Model.DocumentTitle" @onchange="UpdateDocumentTitleAsync" class="form-control" />
+        </div>
+        <div class="col-auto ms-auto me-3">
+            <button class="btn btn-danger" @onclick="ClearContent">Clear Content</button>
+        </div>
+    </div>
+    <!-- Toolbar -->
+    <div class="editor-toolbar">
+        <!-- Basic formatting -->
+        <div class="d-flex gap-2 ">
+            <Tooltip Title="Bold">
+                <button class="btn editor-btn" @onclick:preventDefault="true" @onclick='() => ExecCommand("bold")'><b>B</b></button>
+            </Tooltip>
+            <Tooltip Title="Italic">
+                <button class="btn editor-btn" @onclick:preventDefault="true" @onclick='() => ExecCommand("italic")'><i>I</i></button>
+            </Tooltip>
+            <Tooltip Title="Underline">
+                <button class="btn editor-btn" @onclick:preventDefault="true" @onclick='() => ExecCommand("underline")'><u>U</u></button>
+            </Tooltip>
+            <div class="vr"></div>
+            <Tooltip Title="Bulleted list">
+                <button class="btn editor-btn" @onclick:preventDefault="true" @onclick='() => ExecCommand("insertUnorderedList")'><i class="bi bi-list-ol"></i></button>
+            </Tooltip>
+            <Tooltip Title="Numbered list">
+                <button class="btn editor-btn" @onclick:preventDefault="true" @onclick='() => ExecCommand("insertOrderedList")'><i class="bi bi-list-ul"></i></button>
+            </Tooltip>
+
+            <div class="vr"></div>
+
+            <Tooltip Title="Insert image">
+                <button class="btn editor-btn" @onclick:preventDefault="true" @onclick="InsertImage">🖼️</button>
+            </Tooltip>
+
+            <div class="vr"></div>
+
+            <Tooltip Title="Align left">
+                <button class="btn editor-btn" @onclick:preventDefault="true" @onclick='() => ExecCommand("justifyLeft")'><i class="bi bi-filter-left"></i></button>
+            </Tooltip>
+            <Tooltip Title="Align right">
+                <button class="btn editor-btn" @onclick:preventDefault="true" @onclick='() => ExecCommand("justifyRight")'><i class="bi bi-filter-right"></i></button>
+            </Tooltip>
+        </div>
+
+        <div class="vr"></div>
+        <!-- Headings -->
+        <select data-bs-toggle="tooltip" data-bs-title="Heading" class="form-select-sm border-500" @onchange="(e) => ApplyHeading(e.Value?.ToString())">
+            <option value="P">Normal</option>
+            <option value="H1" class="h1">Heading 1</option>
+            <option value="H2" class="h2">Heading 2</option>
+            <option value="H3" class="h3">Heading 3</option>
+            <option value="H4" class="h4">Heading 4</option>
+        </select>
+
+        <!-- Fonts -->
+        <select data-bs-toggle="tooltip" data-bs-title="Font" class="form-select-sm border-500" @onchange='(e) => ExecCommand("fontName", e.Value?.ToString())'>
+            <option value="Arial">Arial</option>
+            <option value="Times New Roman">Times New Roman</option>
+            <option value="Courier New">Courier New</option>
+            <option value="Verdana">Verdana</option>
+        </select>
+
+        <!-- Font Sizes -->
+        <select class="form-select-sm border-500" @onchange='(e) => ExecCommand("fontSize", e.Value?.ToString())'>
+            <option value="1">Small</option>
+            <option value="3" selected>Normal</option>
+            <option value="5">Large</option>
+            <option value="7">Huge</option>
+        </select>
+    </div>
+
+    <!-- Split view: editor + preview -->
+    <div class="editor-body">
+        <!-- WYSIWYG surface -->
+        <div id="@EditorId"
+             class="editor-surface"
+             contenteditable="true"
+             @ref="_editorRef">
+        </div>
+    </div>
+    <div class="d-flex w-100">
+        <div class="col-6">
+            <button class="btn btn-primary text-bg-primary fw-bolder w-100" @onclick="SaveClicked">
+                @if (Model.ContentId != 0)
+                {
+                    <span> Update Content </span>
+                }
+                else
+                {
+                    <span> Save Content </span>
+                }
+            </button>
+        </div>
+    </div>
+</div>
+
+<Modal OnShown="SyncHtml" Id="code-editor">
+    <ModalTitle> HTML Code Editor </ModalTitle>
+    <ModalBody>
+        <hr />
+        <p class="p-3">
+            Paste or edit HTML.
+        </p>
+        <EditForm Model="Model">
+            <div class="d-flex w-100 px-0 mx-0 min-h-30">
+                <InputTextArea class="form-text w-100 vs-30" @bind-Value="_rawHtml" @bind-Value:after="SetHtmlContentAsync">
+
+                </InputTextArea>
+            </div>
+        </EditForm>
+    </ModalBody>
+    <ModalFooter>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Done</button>
+    </ModalFooter>
+</Modal>
+
+@code {
+    private string EditorId = "editor";
+    private string _htmlContent = "";
+    private string _rawHtml = "";
+    private ElementReference? _editorRef;
+
+    [Parameter]
+    public string? Class { get; set; }
+
+    [Parameter]
+    public EventCallback<HtmlEditorContent> ModelChanged { get; set; }
+
+    [Parameter]
+    public EventCallback SaveClicked { get; set; }
+
+    [Parameter]
+    public HtmlEditorContent Model { get; set; } = new();
+
+    private DotNetObjectReference<HTML>? _selfRef;
+    IJSObjectReference? _module;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            // List<string> fonts = await JS.InvokeAsync<List<string>>("")
+            _selfRef = DotNetObjectReference.Create(this);
+            var options = new
+            {
+                dotnetRef = _selfRef,
+                id = EditorId,
+                imageCallback = nameof(ImageCallback),
+                EditorCallback = nameof(EditorCallback)
+
+            };
+            _module = await JS.InvokeAsync<IJSObjectReference>("import", "./_content/MarketingMessages.Shared/js/HtmlEditor.js");
+            await _module.InvokeVoidAsync("createEditor", options);
+            await JS.InvokeVoidAsync("initializeTooltips");
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+    private async Task ExecCommand(string command, string? value = null)
+    {
+        await JS.InvokeVoidAsync("wysiwyg.execCommand", command, value);
+    }
+
+    [JSInvokable]
+    public async Task ImageCallback(string id, string name, string img)
+    {
+        await InvokeAsync(StateHasChanged);
+        if (JS is null)
+            return;
+        img = img.Contains(',') ? img.Split(',')[^1] : img;
+        var imageResponse = await _contentService.UploadImageAsync(name, img);
+        Model.HtmlContent = await JS.InvokeAsync<string>("wysiwyg.replaceImgSrc", id, imageResponse.Url);
+        if (!Model.Images.TryAdd(name, img))
+            Model.Images[name] = img;
+
+        if (!Model.ImageUrls.TryAdd(name, imageResponse.Url))
+            Model.ImageUrls[name] = imageResponse.Url;
+
+        await ModelChanged.InvokeAsync(Model);
+    }
+
+    [JSInvokable]
+    public async Task EditorCallback(string? textContent, string? htmlContent)
+    {
+        Model ??= new();
+        Model.TextContent = textContent ?? "";
+        Model.HtmlContent = htmlContent ?? "";
+        await ModelChanged.InvokeAsync();
+    }
+
+
+    private async Task InsertImage()
+    {
+        if (JS is null)
+            return;
+        var file = await JS.InvokeAsync<string>("wysiwyg.uploadImage");
+        if (!string.IsNullOrEmpty(file))
+        {
+            await JS.InvokeVoidAsync("wysiwyg.insertImage", EditorId, file);
+            await RefreshContent();
+        }
+    }
+
+    private async Task OnInput(ChangeEventArgs e)
+    {
+        await RefreshContent();
+    }
+
+    private async Task ApplyHeading(string? tag)
+    {
+        if (JS is null)
+            return;
+
+        if (!string.IsNullOrEmpty(tag))
+        {
+            await JS.InvokeVoidAsync("wysiwyg.formatBlock", tag);
+            await RefreshContent();
+        }
+    }
+
+    private async Task RefreshContent()
+    {
+        if (JS is null)
+            return;
+        var result = await JS.InvokeAsync<string>("wysiwyg.getContent");
+        if (result is not null)
+        {
+            Model.HtmlContent = result;
+        }
+        await ModelChanged.InvokeAsync(Model);
+    }
+
+    private async Task UpdateDocumentTitleAsync(ChangeEventArgs args)
+    {
+        Model.DocumentTitle = args.Value?.ToString() ?? "";
+        await ModelChanged.InvokeAsync(Model);
+    }
+
+    public async Task<string> GetContent() =>
+        await JS.InvokeAsync<string>("wysiwyg.getContent");
+
+    public async Task ClearContent()
+    {
+        await JS.InvokeVoidAsync("wysiwyg.clearContent");
+        Model = new();
+        await ModelChanged.InvokeAsync(Model);
+    }
+
+    public async Task SyncHtml()
+    {
+        _rawHtml = await GetContent();
+    }
+
+    private async Task SetHtmlContentAsync()
+    {
+        Model.ContentId = 0;
+        Model.HtmlContent = _rawHtml;
+        // _htmlContent = (MarkupString)Model.HtmlContent;
+        // await ModelChanged.InvokeAsync(Model);
+        await JS.InvokeVoidAsync("wysiwyg.resetContent", Model.HtmlContent);
+        await ModelChanged.InvokeAsync(Model);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await JS.InvokeVoidAsync("disposeEditor");
+        _selfRef?.Dispose();
+        _selfRef = null;
+        GC.SuppressFinalize(this);
+    }
+
+    public async Task SetHtmlContentAsync(HtmlEditorContent content)
+    {
+        Model = content;
+        await JS.InvokeVoidAsync("wysiwyg.resetContent", Model.HtmlContent);
+        // await InvokeAsync(StateHasChanged);
+    }
+}

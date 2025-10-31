@@ -1,0 +1,61 @@
+{
+  "Files": [
+    {
+      "Id": "D:\\DarkMatter\\TrunkMonkeyMVP\\TrunkMonkey.Shared\\wwwroot\\background.png",
+      "PackagePath": "staticwebassets\\background.png"
+    },
+    {
+      "Id": "D:\\DarkMatter\\TrunkMonkeyMVP\\TrunkMonkey.Shared\\wwwroot\\images\\crowbar-logo.png",
+      "PackagePath": "staticwebassets\\images\\crowbar-logo.png"
+    },
+    {
+      "Id": "D:\\DarkMatter\\TrunkMonkeyMVP\\TrunkMonkey.Shared\\wwwroot\\images\\preview-placeholder.png",
+      "PackagePath": "staticwebassets\\images\\preview-placeholder.png"
+    },
+    {
+      "Id": "D:\\DarkMatter\\TrunkMonkeyMVP\\TrunkMonkey.Shared\\wwwroot\\interop.js",
+      "PackagePath": "staticwebassets\\interop.js"
+    },
+    {
+      "Id": "D:\\DarkMatter\\TrunkMonkeyMVP\\TrunkMonkey.Shared\\wwwroot\\js\\applicationStorage.js",
+      "PackagePath": "staticwebassets\\js\\applicationStorage.js"
+    },
+    {
+      "Id": "D:\\DarkMatter\\TrunkMonkeyMVP\\TrunkMonkey.Shared\\wwwroot\\js\\bootstrapInitialization.js",
+      "PackagePath": "staticwebassets\\js\\bootstrapInitialization.js"
+    },
+    {
+      "Id": "D:\\DarkMatter\\TrunkMonkeyMVP\\TrunkMonkey.Shared\\wwwroot\\js\\collapse.js",
+      "PackagePath": "staticwebassets\\js\\collapse.js"
+    },
+    {
+      "Id": "D:\\DarkMatter\\TrunkMonkeyMVP\\TrunkMonkey.Shared\\wwwroot\\js\\modal.js",
+      "PackagePath": "staticwebassets\\js\\modal.js"
+    },
+    {
+      "Id": "D:\\DarkMatter\\TrunkMonkeyMVP\\TrunkMonkey.Shared\\wwwroot\\logo.png",
+      "PackagePath": "staticwebassets\\logo.png"
+    },
+    {
+      "Id": "obj\\Release\\net9.0\\staticwebassets\\msbuild.TrunkMonkey.Shared.Microsoft.AspNetCore.StaticWebAssetEndpoints.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssetEndpoints.props"
+    },
+    {
+      "Id": "obj\\Release\\net9.0\\staticwebassets\\msbuild.TrunkMonkey.Shared.Microsoft.AspNetCore.StaticWebAssets.props",
+      "PackagePath": "build\\Microsoft.AspNetCore.StaticWebAssets.props"
+    },
+    {
+      "Id": "obj\\Release\\net9.0\\staticwebassets\\msbuild.build.TrunkMonkey.Shared.props",
+      "PackagePath": "build\\TrunkMonkey.Shared.props"
+    },
+    {
+      "Id": "obj\\Release\\net9.0\\staticwebassets\\msbuild.buildMultiTargeting.TrunkMonkey.Shared.props",
+      "PackagePath": "buildMultiTargeting\\TrunkMonkey.Shared.props"
+    },
+    {
+      "Id": "obj\\Release\\net9.0\\staticwebassets\\msbuild.buildTransitive.TrunkMonkey.Shared.props",
+      "PackagePath": "buildTransitive\\TrunkMonkey.Shared.props"
+    }
+  ],
+  "ElementsToRemove": []
+}

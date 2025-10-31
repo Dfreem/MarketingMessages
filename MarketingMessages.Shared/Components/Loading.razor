@@ -1,0 +1,57 @@
+﻿@if (RendererInfo.IsInteractive)
+{
+    <Modal @ref="_selfRef" Id="loading-modal" Class="loading-modal">
+        <ModalBody>
+            <div class="d-flex w-100 mt-auto justify-content-center align-items-center">
+                <div class="spinner-border spinner-grow text-600"></div>
+            </div>
+            <div class="d-flex w-100 mt-auto justify-content-center align-items-center">
+                @if (Message != null)
+                {
+                    <label class="col-form-label">@Message</label>
+                }
+                else
+                {
+                    <label class="col-form-label">Loading...</label>
+                }
+            </div>
+        </ModalBody>
+    </Modal>
+}
+else
+{
+
+    <Modal @ref="_selfRef" Visible="true" Id="loading-modal" Class="loading-modal">
+        <ModalBody>
+            <div class="d-flex w-100 mt-auto justify-content-center align-items-center">
+                <div class="spinner-border spinner-grow text-600"></div>
+                <label class="col-form-label">Loading...</label>
+            </div>
+        </ModalBody>
+    </Modal>
+}
+
+@code {
+    [Parameter]
+    public string? Message { get; set; }
+
+    private Modal _selfRef = new();
+
+    public bool IsLoading { get; set; }
+
+    protected override Task OnInitializedAsync()
+    {
+        Load.OnLoading += async (_, args) =>
+        {
+            IsLoading = args;
+            if (args)
+                await _selfRef.Show();
+            else
+                await _selfRef.Hide();
+
+            await InvokeAsync(StateHasChanged);
+        };
+        return base.OnInitializedAsync();
+    }
+
+}
