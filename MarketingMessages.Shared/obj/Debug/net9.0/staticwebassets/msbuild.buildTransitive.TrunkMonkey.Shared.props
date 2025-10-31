@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="..\buildMultiTargeting\TrunkMonkey.Shared.props" />
-</Project>
